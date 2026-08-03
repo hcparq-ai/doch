@@ -160,3 +160,25 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .chart-legend{display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:10px;color:var(--muted)}
 .chart-legend i{display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle}
 .legend-fit{background:#49d17d}.legend-fatigue{background:#ffcf32}.legend-form{background:#ff7167}
+
+
+.coach-hero{position:relative;overflow:hidden}
+.coach-signal{font-size:28px;margin:8px 0}
+.coach-green{border-color:#265d3a!important}
+.coach-green .coach-signal,.coach-green h1{color:var(--green)}
+.coach-amber{border-color:#6d5c19!important}
+.coach-amber .coach-signal,.coach-amber h1{color:var(--yellow)}
+.coach-red{border-color:#7b2929!important}
+.coach-red .coach-signal,.coach-red h1{color:#ff7167}
+.coach-session h2{font-size:27px;margin:8px 0 14px}
+.coach-session-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0 14px}
+.coach-session-grid>div{text-align:center;background:var(--surface2);border-radius:12px;padding:12px}
+.coach-session-grid b{display:block;font-size:18px}
+.coach-session-grid span{font-size:10px;color:var(--muted)}
+.dual-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+
+
+.data-health{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.data-health>div{text-align:center;background:var(--surface2);padding:10px;border-radius:12px}
+.data-health b{display:block;font-size:20px}
+.data-health span{font-size:9px;color:var(--muted)}

@@ -25,7 +25,7 @@ async function loadWorkouts(force=false){
    .order('date',{ascending:false})
    .order('created_at',{ascending:false});
   if(error)throw error;
-  state.workouts=Array.isArray(data)?data:[];
+  state.workouts=typeof normalizeWorkouts==='function'?normalizeWorkouts(data):Array.isArray(data)?data:[];
   localStorage.setItem(STORE,JSON.stringify(state));
   return state.workouts;
  }catch(e){

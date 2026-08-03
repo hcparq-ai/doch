@@ -30,7 +30,7 @@ function dateRangeDays(days){
 }
 function dailyLoads(days=120){
  const keys=dateRangeDays(days),map=Object.fromEntries(keys.map(k=>[k,0]));
- (state.workouts||[]).forEach(w=>{if(map[w.date]!==undefined)map[w.date]+=estimatedLoad(w)});
+ (typeof normalizeWorkouts==='function'?normalizeWorkouts(state.workouts||[]):state.workouts||[]).forEach(w=>{if(map[w.date]!==undefined)map[w.date]+=estimatedLoad(w)});
  return keys.map(date=>({date,load:map[date]}));
 }
 function ewma(values,days){
@@ -53,7 +53,7 @@ function performanceData(){
  for(let i=11;i>=0;i--){
   const start=startOfWeek(new Date(Date.now()-i*7*86400000));
   const end=new Date(start);end.setDate(end.getDate()+7);
-  const list=(state.workouts||[]).filter(w=>{const d=parseLocalDate(w.date);return d>=start&&d<end});
+  const list=(typeof normalizeWorkouts==='function'?normalizeWorkouts(state.workouts||[]):state.workouts||[]).filter(w=>{const d=parseLocalDate(w.date);return d>=start&&d<end});
   weeks.push({
    label:`${start.getDate()}/${start.getMonth()+1}`,
    load:list.reduce((s,w)=>s+estimatedLoad(w),0),
@@ -104,7 +104,7 @@ async function performanceModule(){
  const max=Math.max(...p.weeks.map(x=>x.load),1);
  const currentWeek=p.weeks.at(-1)||{load:0,km:0,hours:0};
  const typeTotals={};
- (state.workouts||[]).forEach(w=>{const type=normalizedWorkoutType(w);typeTotals[type]=(typeTotals[type]||0)+estimatedLoad(w)});
+ (typeof normalizeWorkouts==='function'?normalizeWorkouts(state.workouts||[]):state.workouts||[]).forEach(w=>{const type=normalizedWorkoutType(w);typeTotals[type]=(typeTotals[type]||0)+estimatedLoad(w)});
  const types=Object.entries(typeTotals).sort((a,b)=>b[1]-a[1]);
  view.innerHTML=`<div class="section-title"><h2>Performance Center</h2><span class="badge">V16.1</span></div>
  <section class="hero performance-hero"><div class="eyebrow">Estado actual</div><div class="performance-score ${label.cls}">${p.current.form.toFixed(0)}</div><h1>${label.text}</h1><p class="muted">Balance entre fitness de 42 días y fatiga de 7 días.</p></section>
@@ -125,5 +125,6 @@ async function performanceModule(){
  <div class="card"><div class="eyebrow">Carga · últimas 12 semanas</div><div class="load-chart">${p.weeks.map(w=>`<div><b class="tiny">${w.load.toFixed(0)}</b><i style="height:${Math.max(3,w.load/max*125)}px"></i><small>${w.label}</small></div>`).join('')}</div></div>
  <div class="card ${Math.abs(p.change)>35?'maintenance-alert':''}"><div class="bar"><span>Cambio últimas 4 semanas</span><b class="${p.change>35?'balance-negative':p.change<-30?'balance-neutral':'balance-positive'}">${p.change>=0?'+':''}${p.change.toFixed(0)}%</b></div><p class="muted">${p.change>35?'El aumento es elevado. Revisa fatiga, sueño y dolor antes de seguir aumentando volumen.':p.change<-30?'La carga bajó de forma importante; puede corresponder a recuperación o interrupción del plan.':'La progresión reciente se mantiene dentro de un rango moderado.'}</p></div>
  <div class="card"><div class="eyebrow">Distribución de carga</div>${types.length?types.map(([type,val])=>`<div class="bar"><span>${type}</span><b>${val.toFixed(0)}</b></div>`).join(''):'<p class="muted">Sin entrenamientos suficientes.</p>'}</div>
+ <div class="card"><div class="eyebrow">Diagnóstico de datos</div><div class="bar"><span>Registros totales</span><b>${typeof dataQualityReport==='function'?dataQualityReport().total:(state.workouts||[]).length}</b></div><div class="bar"><span>Ciclismo utilizable</span><b>${typeof dataQualityReport==='function'?dataQualityReport().rideCount:'—'}</b></div><div class="bar"><span>Actividades Strava</span><b>${typeof dataQualityReport==='function'?dataQualityReport().stravaCount:'—'}</b></div></div>
  <div class="card disclaimer-box"><b>Cómo se calcula</b><p class="muted">Carga DOCH20 es una estimación basada en duración, distancia, desnivel, tipo de sesión, RPE, frecuencia cardíaca y potencia cuando están disponibles. No equivale a TSS, TRIMP ni a una evaluación médica.</p></div>`;
 }

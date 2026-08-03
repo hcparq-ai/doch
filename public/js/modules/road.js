@@ -1,7 +1,7 @@
 function dayKey(d){return d.toISOString().slice(0,10)}
 function roadStats(){
- const all=state.workouts||[];
- const rides=all.filter(x=>['ruta','gravel','rodillo','brevet'].includes(x.type));
+ const all=typeof normalizeWorkouts==='function'?normalizeWorkouts(state.workouts||[]):state.workouts||[];
+ const rides=all.filter(x=>typeof rideWorkout==='function'?rideWorkout(x):['ruta','gravel','rodillo','brevet'].includes(x.type));
  const byDay={};
  rides.forEach(x=>byDay[x.date]=(byDay[x.date]||0)+(Number(x.distance)||0));
  const longest=[...rides].sort((a,b)=>(Number(b.distance)||0)-(Number(a.distance)||0))[0]||null;
@@ -46,7 +46,7 @@ function renderRoadToParis(){
  const target4=1000;
  const readiness=Math.min(100,Math.round((recent/target4)*100));
  view.innerHTML=`<div class="section-title"><h2>Road to Paris</h2><span class="badge">PBP 2027</span></div>
- <section class="hero"><div class="eyebrow">Volumen acumulado</div><h1>${s.total.toFixed(0)} km</h1><p class="muted">Salida más larga: ${longest.toFixed(0)} km · ${s.activeDays} días activos</p><div class="progress"><i style="width:${Math.min(100,s.total/1200*100)}%"></i></div></section>
+ <section class="hero"><div class="eyebrow">Volumen de ciclismo registrado</div><h1>${s.total.toFixed(0)} km</h1><p class="muted">Salida más larga: ${longest.toFixed(0)} km · ${s.activeDays} días activos</p><div class="progress"><i style="width:${Math.min(100,s.total/1200*100)}%"></i></div></section>
  <div class="card"><div class="eyebrow">Escalera brevet</div>${stages.map(k=>{const pct=Math.min(100,longest/k*100);return `<div class="road-stage ${longest>=k?'done':''}"><div class="stage-km">${k} km</div><div class="progress"><i style="width:${pct}%"></i></div><div>${longest>=k?'✓':Math.round(pct)+'%'}</div></div>`}).join('')}</div>
  <div class="card"><div class="eyebrow">Estado reciente</div><div class="road-kpi"><div><b>${recent.toFixed(0)}</b><span>km / 4 semanas</span></div><div><b>${readiness}%</b><span>volumen objetivo</span></div><div><b>${s.streak}</b><span>racha actual</span></div></div></div>
  <div class="card"><div class="eyebrow">Carga diaria · 14 semanas</div><div class="heatmap">${s.heat.map(x=>`<i class="heat-day ${heatClass(x.km)}" title="${x.date}: ${x.km.toFixed(0)} km"></i>`).join('')}</div><div class="heat-legend"><span class="tiny">Menos</span><i class="heat-day l1"></i><i class="heat-day l2"></i><i class="heat-day l3"></i><i class="heat-day l4"></i><span class="tiny">Más</span></div></div>

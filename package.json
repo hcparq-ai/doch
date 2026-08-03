@@ -1,11 +1,14 @@
 {
   "name": "doch20",
-  "version": "16.1.0",
+  "version": "16.2.0",
   "private": true,
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }

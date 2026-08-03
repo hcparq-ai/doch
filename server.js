@@ -1,3 +1,4 @@
+require('dotenv').config();
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -184,7 +185,7 @@ http.createServer(async (req,res) => {
     const url = new URL(req.url, BASE);
 
     if (url.pathname === '/health') {
-      return json(res,200,{ok:true,version:'16.1.0',stravaConfigured:configured()});
+      return json(res,200,{ok:true,version:'16.2.0',stravaConfigured:configured()});
     }
     if (url.pathname === '/api/config') {
       return json(res,200,{supabaseUrl:SUPABASE_URL,supabaseAnonKey:SUPABASE_ANON_KEY});
@@ -286,4 +287,4 @@ http.createServer(async (req,res) => {
     console.error(e);
     json(res,500,{error:e.message || 'Error interno'});
   }
-}).listen(PORT,()=>console.log(`DOCH20 V16.1 en http://localhost:${PORT}`));
+}).listen(PORT,()=>console.log(`DOCH20 V16.2 en http://localhost:${PORT}`));
