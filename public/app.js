@@ -393,11 +393,69 @@ function renderDashboard(){
 }
 
 function legacyHome(){const n=next(),pct=Math.round(done()/Math.max(plan.length,1)*100),days=Math.max(0,Math.ceil((new Date('2027-08-15')-new Date())/86400000));view.innerHTML=`<section class="hero"><div class="eyebrow">Misión de hoy</div><h1>${n.title}</h1><p class="muted">${n.time}${n.km?` · ${n.km} km`:''}${n.zone?` · ${n.zone}`:''}</p><p class="tiny">${n.route||n.type}</p><button class="primary" onclick="openSession(${plan.indexOf(n)})">INICIAR / REGISTRAR</button></section><div class="grid"><div class="card"><div class="tiny">DÍAS A PBP</div><div class="metric">${days}</div></div><div class="card"><div class="tiny">KM REALIZADOS</div><div class="metric">${realKm().toFixed(0)}</div></div></div><div class="card"><div class="eyebrow">Perfil</div><div class="cloud-state"><i class="cloud-dot ${cloud.user?'on':'off'}"></i>${cloud.user?'Sincronización activa':'Datos guardados en este dispositivo'}</div><div class="bar"><b>${state.profile.name}</b><span>${state.profile.weight} kg</span></div><div class="bar"><span>${state.profile.goal}</span><span>${state.profile.goalDate}</span></div></div><div class="card"><div class="eyebrow">Resumen real</div><div class="bar"><span>Entrenamientos del diario</span><b>${(state.workouts||[]).length}</b></div><div class="bar"><span>Kilómetros registrados</span><b>${(state.workouts||[]).reduce((s,x)=>s+(Number(x.distance)||0),0).toFixed(0)} km</b></div></div><div class="card"><div class="eyebrow">Road to Paris</div><div class="bar"><b>PBP 1200 km</b><span>${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div><div class="section-title"><h2>Próximas sesiones</h2></div><div class="card">${plan.filter(x=>x.date>=today()).slice(0,5).map(item).join('')}</div>`}
+
+function dayKey(d){return d.toISOString().slice(0,10)}
+function roadStats(){
+ const all=state.workouts||[];
+ const rides=all.filter(x=>['ruta','gravel','rodillo','brevet'].includes(x.type));
+ const byDay={};
+ rides.forEach(x=>byDay[x.date]=(byDay[x.date]||0)+(Number(x.distance)||0));
+ const longest=[...rides].sort((a,b)=>(Number(b.distance)||0)-(Number(a.distance)||0))[0]||null;
+ const total=rides.reduce((s,x)=>s+(Number(x.distance)||0),0);
+ const activeDays=new Set(rides.filter(x=>Number(x.distance)>0).map(x=>x.date)).size;
+ const weeks=[];
+ const now=new Date();
+ for(let i=11;i>=0;i--){
+  const start=startOfWeek(new Date(now.getFullYear(),now.getMonth(),now.getDate()-i*7));
+  const end=new Date(start);end.setDate(end.getDate()+7);
+  const km=rides.filter(x=>{const d=parseLocalDate(x.date);return d>=start&&d<end}).reduce((s,x)=>s+(Number(x.distance)||0),0);
+  weeks.push({label:`${start.getDate()}/${start.getMonth()+1}`,km});
+ }
+ let streak=0;
+ for(let i=0;i<365;i++){
+  const d=new Date(now);d.setDate(d.getDate()-i);
+  const k=dayKey(d);
+  if((byDay[k]||0)>0)streak++;
+  else if(i>0)break;
+ }
+ const heat=[];
+ for(let i=97;i>=0;i--){
+  const d=new Date(now);d.setDate(d.getDate()-i);
+  const km=byDay[dayKey(d)]||0;
+  heat.push({date:dayKey(d),km});
+ }
+ return {rides,total,longest,activeDays,weeks,streak,heat};
+}
+function heatClass(km){
+ if(km<=0)return '';
+ if(km<30)return 'l1';
+ if(km<70)return 'l2';
+ if(km<130)return 'l3';
+ return 'l4';
+}
+function renderRoadToParis(){
+ const s=roadStats();
+ const stages=[200,300,400,600,1000,1200];
+ const longest=Number(s.longest?.distance||0);
+ const maxWeek=Math.max(...s.weeks.map(x=>x.km),1);
+ const recent=s.weeks.slice(-4).reduce((a,x)=>a+x.km,0);
+ const target4=1000;
+ const readiness=Math.min(100,Math.round((recent/target4)*100));
+ view.innerHTML=`<div class="section-title"><h2>Road to Paris</h2><span class="badge">PBP 2027</span></div>
+ <section class="hero"><div class="eyebrow">Volumen acumulado</div><h1>${s.total.toFixed(0)} km</h1><p class="muted">Salida más larga: ${longest.toFixed(0)} km · ${s.activeDays} días activos</p><div class="progress"><i style="width:${Math.min(100,s.total/1200*100)}%"></i></div></section>
+ <div class="card"><div class="eyebrow">Escalera brevet</div>${stages.map(k=>{const pct=Math.min(100,longest/k*100);return `<div class="road-stage ${longest>=k?'done':''}"><div class="stage-km">${k} km</div><div class="progress"><i style="width:${pct}%"></i></div><div>${longest>=k?'✓':Math.round(pct)+'%'}</div></div>`}).join('')}</div>
+ <div class="card"><div class="eyebrow">Estado reciente</div><div class="road-kpi"><div><b>${recent.toFixed(0)}</b><span>km / 4 semanas</span></div><div><b>${readiness}%</b><span>volumen objetivo</span></div><div><b>${s.streak}</b><span>racha actual</span></div></div></div>
+ <div class="card"><div class="eyebrow">Carga diaria · 14 semanas</div><div class="heatmap">${s.heat.map(x=>`<i class="heat-day ${heatClass(x.km)}" title="${x.date}: ${x.km.toFixed(0)} km"></i>`).join('')}</div><div class="heat-legend"><span class="tiny">Menos</span><i class="heat-day l1"></i><i class="heat-day l2"></i><i class="heat-day l3"></i><i class="heat-day l4"></i><span class="tiny">Más</span></div></div>
+ <div class="card"><div class="eyebrow">Últimas 12 semanas</div><div class="volume-bars">${s.weeks.map(x=>`<div><b class="tiny">${x.km.toFixed(0)}</b><i style="height:${Math.max(3,x.km/maxWeek*110)}px"></i><small>${x.label}</small></div>`).join('')}</div></div>
+ <div class="card"><div class="bar"><span>Próximo objetivo</span><b>${longest<200?'200 km':longest<300?'300 km':longest<400?'400 km':longest<600?'600 km':longest<1000?'1.000 km':'PBP 1.200 km'}</b></div><div class="bar"><span>Mayor distancia registrada</span><b>${longest.toFixed(1)} km</b></div><div class="bar"><span>Diagnóstico</span><b class="${readiness>=75?'status-good':'status-warn'}">${readiness>=75?'Volumen sólido':'Seguir acumulando base'}</b></div></div>`;
+}
+
 function home(){renderDashboard()}
 function calendar(){let y=currentMonth.getFullYear(),m=currentMonth.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),offset=(first.getDay()+6)%7,cells=[];for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=last.getDate();d++)cells.push(new Date(y,m,d));view.innerHTML=`<div class="section-title"><h2>Calendario</h2><button class="secondary" onclick="goToday()">Hoy</button></div><div class="card"><div class="month-head"><button class="secondary" onclick="moveMonth(-1)">‹</button><b>${first.toLocaleDateString('es-CL',{month:'long',year:'numeric'})}</b><button class="secondary" onclick="moveMonth(1)">›</button></div><div class="month-grid">${['L','M','X','J','V','S','D'].map(x=>`<div class="dow">${x}</div>`).join('')}${cells.map(d=>{if(!d)return '<div class="day empty"></div>';let ds=iso(d),ev=plan.filter(x=>x.date===ds),cls='day';if(ds===today())cls+=' today';if(ds===state.selectedDate)cls+=' selected';return `<div class="${cls}" onclick="selectDate('${ds}')">${d.getDate()}<div class="dots">${ev.slice(0,3).map(x=>`<i class="dot ${x.type}"></i>`).join('')}</div></div>`}).join('')}</div></div><div class="card">${state.selectedDate?plan.filter(x=>x.date===state.selectedDate).map(x=>`<div onclick="openSession(${plan.indexOf(x)})">${item(x)}</div>`).join('')||'<p class="muted">Sin actividades.</p>':'<p class="muted">Selecciona un día.</p>'}</div>`}
 function selectDate(d){state.selectedDate=d;save();calendar()}function moveMonth(n){currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+n,1);calendar()}function goToday(){let d=new Date();currentMonth=new Date(d.getFullYear(),d.getMonth(),1);state.selectedDate=today();calendar()}
 function planView(){view.innerHTML=`<div class="section-title"><h2>Entrenamientos</h2><button class="secondary" onclick="exportICS()">Exportar .ics</button></div><div class="card">${plan.map((x,i)=>`<div onclick="openSession(${i})">${item(x)}</div>`).join('')}</div>`}
-function road(){view.innerHTML=`<section class="hero"><div class="eyebrow">Proyecto activo</div><h1>Paris–Brest–Paris 2027</h1><p class="muted">1.200 km · Road to Paris</p></section><div class="card">${[['200 km',1],['300 km',1],['400 km',0],['600 km',0],['1.000 km',0],['PBP 1.200 km',0]].map(x=>`<div class="bar"><b>${x[0]}</b><span class="${x[1]?'green':'muted'}">${x[1]?'✓':'○'}</span></div>`).join('')}</div>`}
+function legacyRoad(){view.innerHTML=`<section class="hero"><div class="eyebrow">Proyecto activo</div><h1>Paris–Brest–Paris 2027</h1><p class="muted">1.200 km · Road to Paris</p></section><div class="card">${[['200 km',1],['300 km',1],['400 km',0],['600 km',0],['1.000 km',0],['PBP 1.200 km',0]].map(x=>`<div class="bar"><b>${x[0]}</b><span class="${x[1]?'green':'muted'}">${x[1]?'✓':'○'}</span></div>`).join('')}</div>`}
+function road(){renderRoadToParis()}
 function more(){view.innerHTML=`<div class="section-title"><h2>Módulos</h2></div><div class="card"><div class="item" onclick="stravaModule()"><div class="icon">🟠</div><div class="item-main"><div class="item-title">Strava</div><div class="item-meta">Sincronizar actividades de ciclismo</div></div></div><div class="item" onclick="account()"><div class="icon">☁️</div><div class="item-main"><div class="item-title">Cuenta y nube</div><div class="item-meta">Inicio de sesión, respaldo y sincronización</div></div></div><div class="item" onclick="brevetsModule()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Gestión de brevets</div><div class="item-meta">Controles, progreso y modo en carrera</div></div></div><div class="item" onclick="nutritionModule()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición para brevets</div><div class="item-meta">Plan, alimentos y consumo real</div></div></div><div class="item" onclick="profile()"><div class="icon">👤</div><div class="item-main"><div class="item-title">Perfil y peso</div><div class="item-meta">Datos deportivos e historial</div></div></div><div class="item" onclick="health()"><div class="icon">🦵</div><div class="item-main"><div class="item-title">Rodilla</div><div class="item-meta">Seguimiento de dolor</div></div></div><div class="item" onclick="nutrition()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición avanzada</div><div class="item-meta">Cálculo total y alimentos</div></div></div><div class="item" onclick="bike()"><div class="icon">🚲</div><div class="item-main"><div class="item-title">Bicicleta</div><div class="item-meta">Componentes y mantenciones</div></div></div><div class="item" onclick="brevet()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Modo Brevet</div><div class="item-meta">Información esencial</div></div></div></div>`}
 function openSession(i){const x=plan[i]||next(),l=state.logs[key(x)]||{};view.innerHTML=`<div class="section-title"><h2>Registro</h2><button class="secondary" onclick="planView()">Volver</button></div><section class="hero"><div class="eyebrow">${x.type}</div><h1>${x.title}</h1><p class="muted">${x.date} · ${x.time}–${x.end}${x.km?` · ${x.km} km`:''}</p><p>${x.route||''}</p></section><div class="card"><div class="field"><label>Estado</label><select id="st"><option value="pending">Pendiente</option><option value="done">Realizado</option><option value="skipped">No realizado</option><option value="modified">Modificado</option></select></div><div class="field"><label>Kilómetros reales</label><input id="rk" type="number" step="0.1" value="${l.realKm??x.km??0}"></div><div class="field"><label>Dolor de rodilla 0–10</label><input id="rp" type="number" min="0" max="10" value="${l.pain??0}"></div><div class="field"><label>Notas</label><textarea id="notes">${l.notes||''}</textarea></div><button class="primary" onclick='saveSession(${JSON.stringify(key(x))})'>GUARDAR SESIÓN</button></div>`;st.value=l.status||'pending'}
 function saveSession(k){const prev=state.logs[k]?.realKm||0;state.logs[k]={status:st.value,realKm:+rk.value||0,pain:+rp.value||0,notes:notes.value};state.bikeKm+=Math.max(0,(+rk.value||0)-prev);save();home()}
