@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Scott Speedster 50",
+    "type": "Gravel / ruta",
+    "km": 8420,
+    "components": [
+      {
+        "name": "Cadena",
+        "current": 1240,
+        "limit": 2000
+      },
+      {
+        "name": "Cassette",
+        "current": 2350,
+        "limit": 6000
+      },
+      {
+        "name": "Pastillas de freno",
+        "current": 850,
+        "limit": 1500
+      },
+      {
+        "name": "Neumáticos",
+        "current": 3200,
+        "limit": 4500
+      }
+    ]
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Plátano",
+    "carbs": 27,
+    "sodium": 1,
+    "caffeine": 0,
+    "unit": "unidad"
+  },
+  {
+    "name": "Gel sin cafeína",
+    "carbs": 25,
+    "sodium": 100,
+    "caffeine": 0,
+    "unit": "gel"
+  },
+  {
+    "name": "Gel con cafeína",
+    "carbs": 25,
+    "sodium": 100,
+    "caffeine": 50,
+    "unit": "gel"
+  },
+  {
+    "name": "Barra energética vegana",
+    "carbs": 35,
+    "sodium": 120,
+    "caffeine": 0,
+    "unit": "barra"
+  },
+  {
+    "name": "Sándwich mantequilla de maní",
+    "carbs": 45,
+    "sodium": 250,
+    "caffeine": 0,
+    "unit": "sándwich"
+  },
+  {
+    "name": "Arroz compacto vegano",
+    "carbs": 50,
+    "sodium": 300,
+    "caffeine": 0,
+    "unit": "porción"
+  },
+  {
+    "name": "Bebida isotónica 500 ml",
+    "carbs": 30,
+    "sodium": 400,
+    "caffeine": 0,
+    "unit": "botella"
+  },
+  {
+    "name": "Coca-Cola 330 ml",
+    "carbs": 35,
+    "sodium": 15,
+    "caffeine": 32,
+    "unit": "lata"
+  }
+]

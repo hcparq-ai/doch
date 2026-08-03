@@ -22,17 +22,6 @@
     "duration": 90
   },
   {
-    "date": "2026-07-31",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #2 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
     "date": "2026-08-01",
     "time": "07:00",
     "end": "10:00",
@@ -42,28 +31,6 @@
     "zone": "Z2",
     "route": "Bustamante → Andrés Bello → Mapocho → Bicentenario → regreso",
     "duration": 180
-  },
-  {
-    "date": "2026-08-02",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #3 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
-    "date": "2026-08-03",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R7 · Recuperación Bustamante",
-    "type": "bike",
-    "km": 22,
-    "zone": "Z1–Z2",
-    "route": "Bustamante → Parque Bustamante → regreso",
-    "duration": 60
   },
   {
     "date": "2026-08-04",
@@ -88,138 +55,6 @@
     "duration": 75
   },
   {
-    "date": "2026-08-06",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #5 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
-    "date": "2026-08-07",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R7 · Recuperación",
-    "type": "bike",
-    "km": 18,
-    "zone": "Z1",
-    "route": "Bustamante → Parque Bustamante → regreso",
-    "duration": 45
-  },
-  {
-    "date": "2026-08-08",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #6 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
-    "date": "2026-08-08",
-    "time": "08:15",
-    "end": "11:30",
-    "title": "R4 · Mapocho 42K",
-    "type": "bike",
-    "km": 55,
-    "zone": "Z1–Z2",
-    "route": "Bustamante → Andrés Bello → Mapocho → Los Reyes → regreso",
-    "duration": 195
-  },
-  {
-    "date": "2026-08-09",
-    "time": "07:00",
-    "end": "11:00",
-    "title": "R5 · Mapocho Oriente Largo · TEST",
-    "type": "bike",
-    "km": 80,
-    "zone": "Z2",
-    "route": "Mapocho Oriente largo",
-    "duration": 240
-  },
-  {
-    "date": "2026-08-10",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #7 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
-    "date": "2026-08-11",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R2 · Pocuro + Ricardo Lyon",
-    "type": "bike",
-    "km": 28,
-    "zone": "Z2",
-    "route": "Pocuro + Ricardo Lyon",
-    "duration": 75
-  },
-  {
-    "date": "2026-08-12",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #8 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
-    "date": "2026-08-13",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R6 · Cerro San Cristóbal · 1 subida",
-    "type": "bike",
-    "km": 28,
-    "zone": "Z2",
-    "route": "General Bustamante → Cerro San Cristóbal → regreso",
-    "duration": 75
-  },
-  {
-    "date": "2026-08-14",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #9 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
-    "date": "2026-08-15",
-    "time": "07:00",
-    "end": "10:00",
-    "title": "R4 · Mapocho 42K · Fondo suave",
-    "type": "bike",
-    "km": 45,
-    "zone": "Z1–Z2",
-    "route": "Mapocho 42K",
-    "duration": 180
-  },
-  {
-    "date": "2026-08-16",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "KINE #10 · Rodilla",
-    "type": "kine",
-    "km": 0,
-    "zone": "",
-    "route": "",
-    "duration": 60
-  },
-  {
     "date": "2026-08-18",
     "time": "07:00",
     "end": "08:00",
@@ -242,28 +77,6 @@
     "duration": 75
   },
   {
-    "date": "2026-08-20",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "GYM B · Estabilidad",
-    "type": "gym",
-    "km": 0,
-    "zone": "",
-    "route": "Cadena posterior y estabilidad",
-    "duration": 50
-  },
-  {
-    "date": "2026-08-20",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R6 · Cerro · 1–2 subidas",
-    "type": "bike",
-    "km": 30,
-    "zone": "Z2",
-    "route": "Cerro San Cristóbal",
-    "duration": 90
-  },
-  {
     "date": "2026-08-22",
     "time": "07:00",
     "end": "14:00",
@@ -273,83 +86,6 @@
     "zone": "Z2",
     "route": "Fondo largo específico",
     "duration": 420
-  },
-  {
-    "date": "2026-08-23",
-    "time": "08:00",
-    "end": "10:00",
-    "title": "R7 · Recuperación",
-    "type": "bike",
-    "km": 38,
-    "zone": "Z1",
-    "route": "Mapocho 42K suave",
-    "duration": 120
-  },
-  {
-    "date": "2026-08-25",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "GYM A · Fuerza ciclismo",
-    "type": "gym",
-    "km": 0,
-    "zone": "",
-    "route": "Fuerza moderada",
-    "duration": 55
-  },
-  {
-    "date": "2026-08-25",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R3 · Mapocho Oriente",
-    "type": "bike",
-    "km": 33,
-    "zone": "Z2",
-    "route": "Mapocho Oriente",
-    "duration": 90
-  },
-  {
-    "date": "2026-08-27",
-    "time": "07:00",
-    "end": "08:00",
-    "title": "GYM B · Estabilidad",
-    "type": "gym",
-    "km": 0,
-    "zone": "",
-    "route": "Estabilidad y cadena posterior",
-    "duration": 50
-  },
-  {
-    "date": "2026-08-27",
-    "time": "18:30",
-    "end": "20:30",
-    "title": "R6 · Cerro · 2 subidas",
-    "type": "bike",
-    "km": 33,
-    "zone": "Z2",
-    "route": "Cerro San Cristóbal",
-    "duration": 100
-  },
-  {
-    "date": "2026-08-29",
-    "time": "07:00",
-    "end": "16:00",
-    "title": "R8 · Fondo 160–180 km",
-    "type": "bike",
-    "km": 170,
-    "zone": "Z2",
-    "route": "Fondo largo específico",
-    "duration": 540
-  },
-  {
-    "date": "2026-09-05",
-    "time": "07:00",
-    "end": "15:00",
-    "title": "R8 · Fondo 130–160 km",
-    "type": "bike",
-    "km": 145,
-    "zone": "Z2",
-    "route": "Fondo largo",
-    "duration": 480
   },
   {
     "date": "2026-09-12",
@@ -394,17 +130,6 @@
     "zone": "Z2",
     "route": "Ensayo general de brevet",
     "duration": 1020
-  },
-  {
-    "date": "2026-09-27",
-    "time": "08:00",
-    "end": "14:00",
-    "title": "R8 · Simulación 80–120 km",
-    "type": "bike",
-    "km": 100,
-    "zone": "Z1–Z2",
-    "route": "Evaluación de recuperación",
-    "duration": 360
   },
   {
     "date": "2026-10-03",
