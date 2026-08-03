@@ -146,3 +146,5 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .balance-neutral{color:var(--yellow)}
 .balance-negative{color:#ff6f61}
 .disclaimer-box{font-size:12px;line-height:1.5}
+
+.menu-arrow{font-size:25px;color:var(--muted);padding-left:8px}.version-chip{font-size:10px;color:var(--muted)}
