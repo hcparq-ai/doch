@@ -1,5 +1,5 @@
-# DOCH20 V2
+# DOCH20 V3
 
-PWA móvil minimalista para entrenamiento de ultradistancia.
+Incluye calendario mensual, resumen semanal y diario posterior al entrenamiento.
 
 Ejecutar con `npm start`.

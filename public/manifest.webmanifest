@@ -5,7 +5,6 @@
   "display": "standalone",
   "background_color": "#090b0d",
   "theme_color": "#090b0d",
-  "description": "Compañero para brevets y ultradistancia",
   "icons": [
     {
       "src": "/icon.svg",
