@@ -97,4 +97,4 @@ Héctor Contreras Pantoja.
 - Modo oscuro.
 - Negro grafito.
 - Amarillo como color principal.
-- Interfaz inspirada en la segunda propuesta visual.
+- Interfaz inspirada en la segunda propuesta visual.![alt text](image.png)
