@@ -74,12 +74,89 @@ async function deleteWorkout(id){
  workouts();
 }
 
+
+const VEGAN_FOODS=[
+ {name:'Plátano',carbs:27,sodium:1,caffeine:0,unit:'unidad'},
+ {name:'Gel sin cafeína',carbs:25,sodium:100,caffeine:0,unit:'gel'},
+ {name:'Gel con cafeína',carbs:25,sodium:100,caffeine:50,unit:'gel'},
+ {name:'Barra energética vegana',carbs:35,sodium:120,caffeine:0,unit:'barra'},
+ {name:'Sándwich mantequilla de maní',carbs:45,sodium:250,caffeine:0,unit:'sándwich'},
+ {name:'Arroz compacto vegano',carbs:50,sodium:300,caffeine:0,unit:'porción'},
+ {name:'Bebida isotónica 500 ml',carbs:30,sodium:400,caffeine:0,unit:'botella'},
+ {name:'Coca-Cola 330 ml',carbs:35,sodium:15,caffeine:32,unit:'lata'}
+];
+
+async function loadNutritionLogs(){
+ state.nutritionLogs=state.nutritionLogs||[];
+ if(cloud.user&&cloud.client){
+  try{
+   const {data,error}=await cloud.client.from('nutrition_logs').select('*').order('date',{ascending:false}).order('created_at',{ascending:false});
+   if(error)throw error;
+   state.nutritionLogs=data||[];
+   localStorage.setItem(STORE,JSON.stringify(state));
+  }catch(e){console.warn('nutrition load failed',e)}
+ }
+ return state.nutritionLogs;
+}
+
+function nutritionTotalsFromForm(){
+ const h=Number(nHours?.value)||0,c=Number(nCarbs?.value)||0,w=Number(nWater?.value)||0,s=Number(nSodium?.value)||0,f=Number(nCaffeine?.value)||0;
+ return {carbs:h*c,water:h*w,sodium:h*s,caffeine:f};
+}
+
+function renderNutritionPreview(){
+ const t=nutritionTotalsFromForm(),el=document.getElementById('nutritionPreview');
+ if(!el)return;
+ el.innerHTML=`<div class="card nutrition-total"><div class="tiny">CARBOS</div><div class="metric">${t.carbs.toFixed(0)} g</div></div><div class="card nutrition-total"><div class="tiny">AGUA</div><div class="metric">${(t.water/1000).toFixed(1)} L</div></div><div class="card nutrition-total"><div class="tiny">SODIO</div><div class="metric">${t.sodium.toFixed(0)} mg</div></div><div class="card nutrition-total"><div class="tiny">CAFEÍNA</div><div class="metric">${t.caffeine.toFixed(0)} mg</div></div>`;
+}
+
+function selectedFoodPlan(){
+ return VEGAN_FOODS.map((f,i)=>({...f,qty:Number(document.getElementById('foodQty'+i)?.value)||0})).filter(x=>x.qty>0);
+}
+
+async function nutritionModule(){
+ await loadNutritionLogs();
+ const logs=state.nutritionLogs||[];
+ view.innerHTML=`<div class="section-title"><h2>Nutrición</h2><button class="secondary" onclick="newNutritionPlan()">Nuevo plan</button></div><div class="card">${logs.length?logs.map(x=>`<div class="item"><div class="icon">🍌</div><div class="item-main"><div class="item-title">${x.title}</div><div class="item-meta">${x.date} · ${x.duration_hours} h · ${x.carbs_per_hour} g CHO/h</div><div class="item-meta">Plan: ${(x.duration_hours*x.carbs_per_hour).toFixed(0)} g CHO · ${(x.duration_hours*x.water_per_hour/1000).toFixed(1)} L</div></div><button class="secondary danger" onclick="deleteNutrition('${x.id}')">×</button></div>`).join(''):'<p class="muted">Todavía no hay planes nutricionales.</p>'}</div>`;
+}
+
+function newNutritionPlan(){
+ view.innerHTML=`<div class="section-title"><h2>Nuevo plan nutricional</h2><button class="secondary" onclick="nutritionModule()">Volver</button></div><div class="card"><div class="field"><label>Fecha</label><input id="nDate" type="date" value="${today()}"></div><div class="field"><label>Título</label><input id="nTitle" value="Fondo / brevet"></div><div class="dual"><div class="field"><label>Duración estimada h</label><input id="nHours" type="number" step="0.5" value="10" oninput="renderNutritionPreview()"></div><div class="field"><label>Carbos g/h</label><input id="nCarbs" type="number" value="80" oninput="renderNutritionPreview()"></div></div><div class="dual"><div class="field"><label>Agua ml/h</label><input id="nWater" type="number" value="600" oninput="renderNutritionPreview()"></div><div class="field"><label>Sodio mg/h</label><input id="nSodium" type="number" value="500" oninput="renderNutritionPreview()"></div></div><div class="field"><label>Cafeína total máxima mg</label><input id="nCaffeine" type="number" value="250" oninput="renderNutritionPreview()"></div></div><div id="nutritionPreview" class="nutrition-grid"></div><div class="section-title"><h2>Alimentos veganos</h2></div><div class="card food-picker">${VEGAN_FOODS.map((f,i)=>`<div class="food-line"><div><b>${f.name}</b><div class="tiny">${f.carbs} g CHO · ${f.sodium} mg Na · ${f.caffeine} mg cafeína / ${f.unit}</div></div><input id="foodQty${i}" type="number" min="0" value="0"></div>`).join('')}</div><div class="card"><div class="field"><label>Notas</label><textarea id="nNotes"></textarea></div><button class="primary" onclick="saveNutritionPlan()">GUARDAR PLAN</button></div>`;
+ renderNutritionPreview();
+}
+
+async function saveNutritionPlan(){
+ const row={date:nDate.value,title:nTitle.value.trim()||'Plan nutricional',duration_hours:Number(nHours.value)||1,carbs_per_hour:Number(nCarbs.value)||0,water_per_hour:Number(nWater.value)||0,sodium_per_hour:Number(nSodium.value)||0,caffeine_total:Number(nCaffeine.value)||0,planned_foods:selectedFoodPlan(),actual_carbs:0,actual_water:0,actual_sodium:0,actual_caffeine:0,notes:nNotes.value.trim()};
+ state.nutritionLogs=state.nutritionLogs||[];
+ if(cloud.user&&cloud.client){
+  const {data,error}=await cloud.client.from('nutrition_logs').insert({...row,user_id:cloud.user.id}).select().single();
+  if(error){alert(error.message);return}
+  state.nutritionLogs.unshift(data);
+ }else{
+  state.nutritionLogs.unshift({...row,id:'local-nutri-'+Date.now(),created_at:new Date().toISOString()});
+ }
+ localStorage.setItem(STORE,JSON.stringify(state));
+ toast(cloud.user?'Plan nutricional sincronizado':'Plan guardado localmente');
+ nutritionModule();
+}
+
+async function deleteNutrition(id){
+ if(!confirm('¿Eliminar este plan nutricional?'))return;
+ if(cloud.user&&cloud.client&&!String(id).startsWith('local-')){
+  const {error}=await cloud.client.from('nutrition_logs').delete().eq('id',id);
+  if(error){alert(error.message);return}
+ }
+ state.nutritionLogs=(state.nutritionLogs||[]).filter(x=>x.id!==id);
+ localStorage.setItem(STORE,JSON.stringify(state));
+ nutritionModule();
+}
+
 function home(){const n=next(),pct=Math.round(done()/Math.max(plan.length,1)*100),days=Math.max(0,Math.ceil((new Date('2027-08-15')-new Date())/86400000));view.innerHTML=`<section class="hero"><div class="eyebrow">Misión de hoy</div><h1>${n.title}</h1><p class="muted">${n.time}${n.km?` · ${n.km} km`:''}${n.zone?` · ${n.zone}`:''}</p><p class="tiny">${n.route||n.type}</p><button class="primary" onclick="openSession(${plan.indexOf(n)})">INICIAR / REGISTRAR</button></section><div class="grid"><div class="card"><div class="tiny">DÍAS A PBP</div><div class="metric">${days}</div></div><div class="card"><div class="tiny">KM REALIZADOS</div><div class="metric">${realKm().toFixed(0)}</div></div></div><div class="card"><div class="eyebrow">Perfil</div><div class="cloud-state"><i class="cloud-dot ${cloud.user?'on':'off'}"></i>${cloud.user?'Sincronización activa':'Datos guardados en este dispositivo'}</div><div class="bar"><b>${state.profile.name}</b><span>${state.profile.weight} kg</span></div><div class="bar"><span>${state.profile.goal}</span><span>${state.profile.goalDate}</span></div></div><div class="card"><div class="eyebrow">Resumen real</div><div class="bar"><span>Entrenamientos del diario</span><b>${(state.workouts||[]).length}</b></div><div class="bar"><span>Kilómetros registrados</span><b>${(state.workouts||[]).reduce((s,x)=>s+(Number(x.distance)||0),0).toFixed(0)} km</b></div></div><div class="card"><div class="eyebrow">Road to Paris</div><div class="bar"><b>PBP 1200 km</b><span>${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div><div class="section-title"><h2>Próximas sesiones</h2></div><div class="card">${plan.filter(x=>x.date>=today()).slice(0,5).map(item).join('')}</div>`}
 function calendar(){let y=currentMonth.getFullYear(),m=currentMonth.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),offset=(first.getDay()+6)%7,cells=[];for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=last.getDate();d++)cells.push(new Date(y,m,d));view.innerHTML=`<div class="section-title"><h2>Calendario</h2><button class="secondary" onclick="goToday()">Hoy</button></div><div class="card"><div class="month-head"><button class="secondary" onclick="moveMonth(-1)">‹</button><b>${first.toLocaleDateString('es-CL',{month:'long',year:'numeric'})}</b><button class="secondary" onclick="moveMonth(1)">›</button></div><div class="month-grid">${['L','M','X','J','V','S','D'].map(x=>`<div class="dow">${x}</div>`).join('')}${cells.map(d=>{if(!d)return '<div class="day empty"></div>';let ds=iso(d),ev=plan.filter(x=>x.date===ds),cls='day';if(ds===today())cls+=' today';if(ds===state.selectedDate)cls+=' selected';return `<div class="${cls}" onclick="selectDate('${ds}')">${d.getDate()}<div class="dots">${ev.slice(0,3).map(x=>`<i class="dot ${x.type}"></i>`).join('')}</div></div>`}).join('')}</div></div><div class="card">${state.selectedDate?plan.filter(x=>x.date===state.selectedDate).map(x=>`<div onclick="openSession(${plan.indexOf(x)})">${item(x)}</div>`).join('')||'<p class="muted">Sin actividades.</p>':'<p class="muted">Selecciona un día.</p>'}</div>`}
 function selectDate(d){state.selectedDate=d;save();calendar()}function moveMonth(n){currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+n,1);calendar()}function goToday(){let d=new Date();currentMonth=new Date(d.getFullYear(),d.getMonth(),1);state.selectedDate=today();calendar()}
 function planView(){view.innerHTML=`<div class="section-title"><h2>Entrenamientos</h2><button class="secondary" onclick="exportICS()">Exportar .ics</button></div><div class="card">${plan.map((x,i)=>`<div onclick="openSession(${i})">${item(x)}</div>`).join('')}</div>`}
 function road(){view.innerHTML=`<section class="hero"><div class="eyebrow">Proyecto activo</div><h1>Paris–Brest–Paris 2027</h1><p class="muted">1.200 km · Road to Paris</p></section><div class="card">${[['200 km',1],['300 km',1],['400 km',0],['600 km',0],['1.000 km',0],['PBP 1.200 km',0]].map(x=>`<div class="bar"><b>${x[0]}</b><span class="${x[1]?'green':'muted'}">${x[1]?'✓':'○'}</span></div>`).join('')}</div>`}
-function more(){view.innerHTML=`<div class="section-title"><h2>Módulos</h2></div><div class="card"><div class="item" onclick="account()"><div class="icon">☁️</div><div class="item-main"><div class="item-title">Cuenta y nube</div><div class="item-meta">Inicio de sesión, respaldo y sincronización</div></div></div><div class="item" onclick="profile()"><div class="icon">👤</div><div class="item-main"><div class="item-title">Perfil y peso</div><div class="item-meta">Datos deportivos e historial</div></div></div><div class="item" onclick="health()"><div class="icon">🦵</div><div class="item-main"><div class="item-title">Rodilla</div><div class="item-meta">Seguimiento de dolor</div></div></div><div class="item" onclick="nutrition()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición avanzada</div><div class="item-meta">Cálculo total y alimentos</div></div></div><div class="item" onclick="bike()"><div class="icon">🚲</div><div class="item-main"><div class="item-title">Bicicleta</div><div class="item-meta">Componentes y mantenciones</div></div></div><div class="item" onclick="brevet()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Modo Brevet</div><div class="item-meta">Información esencial</div></div></div></div>`}
+function more(){view.innerHTML=`<div class="section-title"><h2>Módulos</h2></div><div class="card"><div class="item" onclick="account()"><div class="icon">☁️</div><div class="item-main"><div class="item-title">Cuenta y nube</div><div class="item-meta">Inicio de sesión, respaldo y sincronización</div></div></div><div class="item" onclick="nutritionModule()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición para brevets</div><div class="item-meta">Plan, alimentos y consumo real</div></div></div><div class="item" onclick="profile()"><div class="icon">👤</div><div class="item-main"><div class="item-title">Perfil y peso</div><div class="item-meta">Datos deportivos e historial</div></div></div><div class="item" onclick="health()"><div class="icon">🦵</div><div class="item-main"><div class="item-title">Rodilla</div><div class="item-meta">Seguimiento de dolor</div></div></div><div class="item" onclick="nutrition()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición avanzada</div><div class="item-meta">Cálculo total y alimentos</div></div></div><div class="item" onclick="bike()"><div class="icon">🚲</div><div class="item-main"><div class="item-title">Bicicleta</div><div class="item-meta">Componentes y mantenciones</div></div></div><div class="item" onclick="brevet()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Modo Brevet</div><div class="item-meta">Información esencial</div></div></div></div>`}
 function openSession(i){const x=plan[i]||next(),l=state.logs[key(x)]||{};view.innerHTML=`<div class="section-title"><h2>Registro</h2><button class="secondary" onclick="planView()">Volver</button></div><section class="hero"><div class="eyebrow">${x.type}</div><h1>${x.title}</h1><p class="muted">${x.date} · ${x.time}–${x.end}${x.km?` · ${x.km} km`:''}</p><p>${x.route||''}</p></section><div class="card"><div class="field"><label>Estado</label><select id="st"><option value="pending">Pendiente</option><option value="done">Realizado</option><option value="skipped">No realizado</option><option value="modified">Modificado</option></select></div><div class="field"><label>Kilómetros reales</label><input id="rk" type="number" step="0.1" value="${l.realKm??x.km??0}"></div><div class="field"><label>Dolor de rodilla 0–10</label><input id="rp" type="number" min="0" max="10" value="${l.pain??0}"></div><div class="field"><label>Notas</label><textarea id="notes">${l.notes||''}</textarea></div><button class="primary" onclick='saveSession(${JSON.stringify(key(x))})'>GUARDAR SESIÓN</button></div>`;st.value=l.status||'pending'}
 function saveSession(k){const prev=state.logs[k]?.realKm||0;state.logs[k]={status:st.value,realKm:+rk.value||0,pain:+rp.value||0,notes:notes.value};state.bikeKm+=Math.max(0,(+rk.value||0)-prev);save();home()}
 function health(){const l=state.knee.at(-1);view.innerHTML=`<div class="section-title"><h2>Rodilla</h2></div><div class="card"><div class="field"><label>Dolor durante</label><input id="pd" type="number" min="0" max="10" value="${l?.during??0}"></div><div class="field"><label>Dolor después</label><input id="pa" type="number" min="0" max="10" value="${l?.after??0}"></div><div class="field"><label>Dolor al día siguiente</label><input id="pn" type="number" min="0" max="10" value="${l?.next??0}"></div><button class="primary" onclick="saveKnee()">GUARDAR</button></div>`}
@@ -102,10 +179,10 @@ async function initCloud(){
   cloud.configured=true;
   const {data}=await cloud.client.auth.getSession();
   cloud.user=data.session?.user||null;
-  if(cloud.user){await loadCloudState();await loadWorkouts();}
+  if(cloud.user){await loadCloudState();await loadWorkouts();await loadNutritionLogs();}
   cloud.client.auth.onAuthStateChange(async(_event,session)=>{
    cloud.user=session?.user||null;
-   if(cloud.user){await loadCloudState();await loadWorkouts();}
+   if(cloud.user){await loadCloudState();await loadWorkouts();await loadNutritionLogs();}
    else home();
   });
   return true;
@@ -153,7 +230,7 @@ async function submitAuth(mode){
  if(result.error){authMessage.textContent=result.error.message;return}
  authMessage.textContent=mode==='signup'?'Cuenta creada. Revisa tu email si se solicita confirmación.':'Sesión iniciada.';
  cloud.user=result.data.user||result.data.session?.user||null;
- if(cloud.user){await loadCloudState();await loadWorkouts();}
+ if(cloud.user){await loadCloudState();await loadWorkouts();await loadNutritionLogs();}
 }
 async function account(){
  if(!cloud.configured){
@@ -170,5 +247,5 @@ async function signOut(){
 
 function exportICS(){let o='BEGIN:VCALENDAR\\r\\nVERSION:2.0\\r\\n';plan.forEach((x,i)=>{let d=x.date.replaceAll('-','');o+=`BEGIN:VEVENT\\r\\nUID:doch20-${i}@app\\r\\nDTSTART:${d}T${x.time.replace(':','')}00\\r\\nDTEND:${d}T${x.end.replace(':','')}00\\r\\nSUMMARY:${x.title}\\r\\nEND:VEVENT\\r\\n`});o+='END:VCALENDAR\\r\\n';let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o],{type:'text/calendar'}));a.download='DOCH20_plan.ics';a.click()}
 function nav(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));({home,calendar,workouts,road,more}[v]||home)()}document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>nav(b.dataset.view));
-Promise.all([fetch('/api/plan').then(r=>r.json()),fetch('/api/foods').then(r=>r.json()),fetch('/api/bikes').then(r=>r.json()),initCloud()]).then(async([p,f,b])=>{plan=p;foods=f;bikes=b;await loadWorkouts();home()});
+Promise.all([fetch('/api/plan').then(r=>r.json()),fetch('/api/foods').then(r=>r.json()),fetch('/api/bikes').then(r=>r.json()),initCloud()]).then(async([p,f,b])=>{plan=p;foods=f;bikes=b;await loadWorkouts();await loadNutritionLogs();home()});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/service-worker.js');
