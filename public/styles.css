@@ -23,3 +23,13 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .cloud-dot.on{background:var(--green)}.cloud-dot.off{background:var(--red)}
 .link-button{border:0;background:none;color:var(--yellow);padding:8px 0;font-weight:800}
 .account-email{word-break:break-all}
+
+
+.fab{position:fixed;right:max(18px,calc((100vw - 560px)/2 + 18px));bottom:92px;width:58px;height:58px;border-radius:50%;border:0;background:var(--yellow);color:#0a0b0c;font-size:30px;font-weight:900;box-shadow:0 12px 30px rgba(0,0,0,.45);z-index:30}
+.workout-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.workout-summary .card{text-align:center}
+.workout-list .item{cursor:pointer}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px}
+.pill{border:1px solid var(--line);background:var(--surface2);color:var(--muted);padding:9px 12px;border-radius:999px}
+.pill.on{border-color:var(--yellow);color:var(--yellow);background:#2a2613}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;background:#182019;color:var(--green);border:1px solid #265d3a;padding:11px 16px;border-radius:12px;z-index:50;font-weight:800}

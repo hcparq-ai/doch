@@ -1,11 +1,80 @@
-const $=s=>document.querySelector(s),STORE='doch20-v5-state';
-let state=JSON.parse(localStorage.getItem(STORE)||'{"logs":{},"knee":[],"nutrition":{"carbs":80,"water":600,"sodium":500,"caffeine":300,"hours":10,"selectedFoods":{}},"bikeKm":8420,"weights":[{"date":"2026-07-29","kg":80}],"profile":{"name":"Héctor Contreras","age":37,"height":175,"weight":80,"diet":"Vegana","goal":"Brevet 1.000 km","goalDate":"2026-10-09"},"selectedDate":null}');
+const $=s=>document.querySelector(s),STORE='doch20-v6-state';
+let state=JSON.parse(localStorage.getItem(STORE)||'{"logs":{},"knee":[],"nutrition":{"carbs":80,"water":600,"sodium":500,"caffeine":300,"hours":10,"selectedFoods":{}},"bikeKm":8420,"weights":[{"date":"2026-07-29","kg":80}],"profile":{"name":"Héctor Contreras","age":37,"height":175,"weight":80,"diet":"Vegana","goal":"Brevet 1.000 km","goalDate":"2026-10-09"},"selectedDate":null,"workouts":[]}');
 let plan=[],foods=[],bikes=[],currentMonth=new Date(2026,7,1);
 let cloud={configured:false,client:null,user:null,saving:false,timer:null};
 const view=$('#view'),icons={bike:'🚴',gym:'🏋️',kine:'🦵',rest:'◌',brevet:'🏁'},save=()=>{localStorage.setItem(STORE,JSON.stringify(state));scheduleCloudSave()},key=x=>`${x.date}|${x.time}|${x.title}`,today=()=>new Date().toISOString().slice(0,10);
 const realKm=()=>Object.values(state.logs).reduce((s,x)=>s+(+x.realKm||0),0),done=()=>Object.values(state.logs).filter(x=>x.status==='done').length,next=()=>plan.find(x=>x.date>=today())||plan[0],iso=d=>d.toISOString().slice(0,10);
 function item(x){const l=state.logs[key(x)]||{};return `<div class="item"><div class="icon">${icons[x.type]||'•'}</div><div class="item-main"><div class="item-title">${x.title}</div><div class="item-meta">${x.date} · ${x.time}–${x.end}${x.km?` · ${x.km} km`:''}${x.zone?` · ${x.zone}`:''}</div>${x.route?`<div class="item-meta">${x.route}</div>`:''}</div><span class="badge">${l.status==='done'?'HECHO':x.type.toUpperCase()}</span></div>`}
-function home(){const n=next(),pct=Math.round(done()/Math.max(plan.length,1)*100),days=Math.max(0,Math.ceil((new Date('2027-08-15')-new Date())/86400000));view.innerHTML=`<section class="hero"><div class="eyebrow">Misión de hoy</div><h1>${n.title}</h1><p class="muted">${n.time}${n.km?` · ${n.km} km`:''}${n.zone?` · ${n.zone}`:''}</p><p class="tiny">${n.route||n.type}</p><button class="primary" onclick="openSession(${plan.indexOf(n)})">INICIAR / REGISTRAR</button></section><div class="grid"><div class="card"><div class="tiny">DÍAS A PBP</div><div class="metric">${days}</div></div><div class="card"><div class="tiny">KM REALIZADOS</div><div class="metric">${realKm().toFixed(0)}</div></div></div><div class="card"><div class="eyebrow">Perfil</div><div class="cloud-state"><i class="cloud-dot ${cloud.user?'on':'off'}"></i>${cloud.user?'Sincronización activa':'Datos guardados en este dispositivo'}</div><div class="bar"><b>${state.profile.name}</b><span>${state.profile.weight} kg</span></div><div class="bar"><span>${state.profile.goal}</span><span>${state.profile.goalDate}</span></div></div><div class="card"><div class="eyebrow">Road to Paris</div><div class="bar"><b>PBP 1200 km</b><span>${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div><div class="section-title"><h2>Próximas sesiones</h2></div><div class="card">${plan.filter(x=>x.date>=today()).slice(0,5).map(item).join('')}</div>`}
+
+function toast(msg){
+ const el=document.createElement('div');
+ el.className='toast';
+ el.textContent=msg;
+ document.body.appendChild(el);
+ setTimeout(()=>el.remove(),2200);
+}
+async function loadWorkouts(){
+ state.workouts=state.workouts||[];
+ if(cloud.user&&cloud.client){
+  try{
+   const {data,error}=await cloud.client.from('workouts').select('*').order('date',{ascending:false}).order('created_at',{ascending:false});
+   if(error)throw error;
+   state.workouts=data||[];
+   localStorage.setItem(STORE,JSON.stringify(state));
+  }catch(e){console.warn('workouts load failed',e)}
+ }
+ return state.workouts;
+}
+function workoutIcon(t){return ({ruta:'🚴',gravel:'🟤',rodillo:'🌀',brevet:'🏁',gimnasio:'🏋️',kinesiologia:'🦵'})[t]||'🚴'}
+function durationLabel(min){min=Number(min)||0;const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m} min`}
+async function workouts(){
+ await loadWorkouts();
+ const w=state.workouts||[];
+ const km=w.reduce((s,x)=>s+(Number(x.distance)||0),0);
+ const mins=w.reduce((s,x)=>s+(Number(x.duration)||0),0);
+ view.innerHTML=`<div class="section-title"><h2>Diario de entrenamiento</h2><button class="secondary" onclick="newWorkout()">Nuevo</button></div>
+ <div class="workout-summary"><div class="card"><div class="tiny">SESIONES</div><div class="metric">${w.length}</div></div><div class="card"><div class="tiny">KM</div><div class="metric">${km.toFixed(0)}</div></div><div class="card"><div class="tiny">HORAS</div><div class="metric">${(mins/60).toFixed(1)}</div></div></div>
+ <div class="card workout-list">${w.length?w.map(x=>`<div class="item"><div class="icon">${workoutIcon(x.type)}</div><div class="item-main"><div class="item-title">${x.type.charAt(0).toUpperCase()+x.type.slice(1)} · ${Number(x.distance||0).toFixed(1)} km</div><div class="item-meta">${x.date} · ${durationLabel(x.duration)} · ${x.elevation||0} m+</div><div class="item-meta">RPE ${x.rpe??'-'} · Rodilla ${x.knee_pain??'-'}/10</div>${x.notes?`<div class="item-meta">${x.notes}</div>`:''}</div><button class="secondary danger" onclick="deleteWorkout('${x.id}')">×</button></div>`).join(''):'<p class="muted">Todavía no hay entrenamientos registrados.</p>'}</div>
+ <button class="fab" onclick="newWorkout()">＋</button>`;
+}
+function newWorkout(){
+ window.workoutType='ruta';
+ view.innerHTML=`<div class="section-title"><h2>Nuevo entrenamiento</h2><button class="secondary" onclick="workouts()">Volver</button></div><div class="card">
+ <div class="field"><label>Fecha</label><input id="wDate" type="date" value="${today()}"></div>
+ <div class="field"><label>Tipo</label><div class="pill-row">${[['ruta','Ruta'],['gravel','Gravel'],['rodillo','Rodillo'],['brevet','Brevet'],['gimnasio','Gimnasio'],['kinesiologia','Kinesiología']].map((x,i)=>`<button class="pill ${i===0?'on':''}" onclick="selectWorkoutType('${x[0]}',this)">${x[1]}</button>`).join('')}</div></div>
+ <div class="dual"><div class="field"><label>Distancia km</label><input id="wDistance" type="number" step="0.1" value="0"></div><div class="field"><label>Duración min</label><input id="wDuration" type="number" value="0"></div></div>
+ <div class="dual"><div class="field"><label>Desnivel m+</label><input id="wElevation" type="number" value="0"></div><div class="field"><label>RPE 1–10</label><input id="wRpe" type="number" min="1" max="10" value="5"></div></div>
+ <div class="field"><label>Dolor de rodilla 0–10</label><input id="wKnee" type="number" min="0" max="10" value="0"></div>
+ <div class="field"><label>Notas</label><textarea id="wNotes" placeholder="Sensaciones, clima, nutrición, molestias..."></textarea></div>
+ <button class="primary" onclick="saveWorkout()">GUARDAR ENTRENAMIENTO</button></div>`;
+}
+function selectWorkoutType(t,b){window.workoutType=t;document.querySelectorAll('.pill').forEach(x=>x.classList.remove('on'));b.classList.add('on')}
+async function saveWorkout(){
+ const row={date:wDate.value,type:window.workoutType,distance:Number(wDistance.value)||0,duration:Number(wDuration.value)||0,elevation:Number(wElevation.value)||0,rpe:Number(wRpe.value)||null,knee_pain:Number(wKnee.value)||0,notes:wNotes.value.trim()};
+ state.workouts=state.workouts||[];
+ if(cloud.user&&cloud.client){
+  const {data,error}=await cloud.client.from('workouts').insert({...row,user_id:cloud.user.id}).select().single();
+  if(error){alert(error.message);return}
+  state.workouts.unshift(data);
+ }else{
+  state.workouts.unshift({...row,id:'local-'+Date.now(),created_at:new Date().toISOString()});
+ }
+ localStorage.setItem(STORE,JSON.stringify(state));
+ toast(cloud.user?'Guardado y sincronizado':'Guardado en este dispositivo');
+ workouts();
+}
+async function deleteWorkout(id){
+ if(!confirm('¿Eliminar este entrenamiento?'))return;
+ if(cloud.user&&cloud.client&&!String(id).startsWith('local-')){
+  const {error}=await cloud.client.from('workouts').delete().eq('id',id);
+  if(error){alert(error.message);return}
+ }
+ state.workouts=(state.workouts||[]).filter(x=>x.id!==id);
+ localStorage.setItem(STORE,JSON.stringify(state));
+ workouts();
+}
+
+function home(){const n=next(),pct=Math.round(done()/Math.max(plan.length,1)*100),days=Math.max(0,Math.ceil((new Date('2027-08-15')-new Date())/86400000));view.innerHTML=`<section class="hero"><div class="eyebrow">Misión de hoy</div><h1>${n.title}</h1><p class="muted">${n.time}${n.km?` · ${n.km} km`:''}${n.zone?` · ${n.zone}`:''}</p><p class="tiny">${n.route||n.type}</p><button class="primary" onclick="openSession(${plan.indexOf(n)})">INICIAR / REGISTRAR</button></section><div class="grid"><div class="card"><div class="tiny">DÍAS A PBP</div><div class="metric">${days}</div></div><div class="card"><div class="tiny">KM REALIZADOS</div><div class="metric">${realKm().toFixed(0)}</div></div></div><div class="card"><div class="eyebrow">Perfil</div><div class="cloud-state"><i class="cloud-dot ${cloud.user?'on':'off'}"></i>${cloud.user?'Sincronización activa':'Datos guardados en este dispositivo'}</div><div class="bar"><b>${state.profile.name}</b><span>${state.profile.weight} kg</span></div><div class="bar"><span>${state.profile.goal}</span><span>${state.profile.goalDate}</span></div></div><div class="card"><div class="eyebrow">Resumen real</div><div class="bar"><span>Entrenamientos del diario</span><b>${(state.workouts||[]).length}</b></div><div class="bar"><span>Kilómetros registrados</span><b>${(state.workouts||[]).reduce((s,x)=>s+(Number(x.distance)||0),0).toFixed(0)} km</b></div></div><div class="card"><div class="eyebrow">Road to Paris</div><div class="bar"><b>PBP 1200 km</b><span>${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div><div class="section-title"><h2>Próximas sesiones</h2></div><div class="card">${plan.filter(x=>x.date>=today()).slice(0,5).map(item).join('')}</div>`}
 function calendar(){let y=currentMonth.getFullYear(),m=currentMonth.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),offset=(first.getDay()+6)%7,cells=[];for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=last.getDate();d++)cells.push(new Date(y,m,d));view.innerHTML=`<div class="section-title"><h2>Calendario</h2><button class="secondary" onclick="goToday()">Hoy</button></div><div class="card"><div class="month-head"><button class="secondary" onclick="moveMonth(-1)">‹</button><b>${first.toLocaleDateString('es-CL',{month:'long',year:'numeric'})}</b><button class="secondary" onclick="moveMonth(1)">›</button></div><div class="month-grid">${['L','M','X','J','V','S','D'].map(x=>`<div class="dow">${x}</div>`).join('')}${cells.map(d=>{if(!d)return '<div class="day empty"></div>';let ds=iso(d),ev=plan.filter(x=>x.date===ds),cls='day';if(ds===today())cls+=' today';if(ds===state.selectedDate)cls+=' selected';return `<div class="${cls}" onclick="selectDate('${ds}')">${d.getDate()}<div class="dots">${ev.slice(0,3).map(x=>`<i class="dot ${x.type}"></i>`).join('')}</div></div>`}).join('')}</div></div><div class="card">${state.selectedDate?plan.filter(x=>x.date===state.selectedDate).map(x=>`<div onclick="openSession(${plan.indexOf(x)})">${item(x)}</div>`).join('')||'<p class="muted">Sin actividades.</p>':'<p class="muted">Selecciona un día.</p>'}</div>`}
 function selectDate(d){state.selectedDate=d;save();calendar()}function moveMonth(n){currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+n,1);calendar()}function goToday(){let d=new Date();currentMonth=new Date(d.getFullYear(),d.getMonth(),1);state.selectedDate=today();calendar()}
 function planView(){view.innerHTML=`<div class="section-title"><h2>Entrenamientos</h2><button class="secondary" onclick="exportICS()">Exportar .ics</button></div><div class="card">${plan.map((x,i)=>`<div onclick="openSession(${i})">${item(x)}</div>`).join('')}</div>`}
@@ -33,10 +102,10 @@ async function initCloud(){
   cloud.configured=true;
   const {data}=await cloud.client.auth.getSession();
   cloud.user=data.session?.user||null;
-  if(cloud.user)await loadCloudState();
+  if(cloud.user){await loadCloudState();await loadWorkouts();}
   cloud.client.auth.onAuthStateChange(async(_event,session)=>{
    cloud.user=session?.user||null;
-   if(cloud.user)await loadCloudState();
+   if(cloud.user){await loadCloudState();await loadWorkouts();}
    else home();
   });
   return true;
@@ -84,7 +153,7 @@ async function submitAuth(mode){
  if(result.error){authMessage.textContent=result.error.message;return}
  authMessage.textContent=mode==='signup'?'Cuenta creada. Revisa tu email si se solicita confirmación.':'Sesión iniciada.';
  cloud.user=result.data.user||result.data.session?.user||null;
- if(cloud.user)await loadCloudState();
+ if(cloud.user){await loadCloudState();await loadWorkouts();}
 }
 async function account(){
  if(!cloud.configured){
@@ -100,6 +169,6 @@ async function signOut(){
 }
 
 function exportICS(){let o='BEGIN:VCALENDAR\\r\\nVERSION:2.0\\r\\n';plan.forEach((x,i)=>{let d=x.date.replaceAll('-','');o+=`BEGIN:VEVENT\\r\\nUID:doch20-${i}@app\\r\\nDTSTART:${d}T${x.time.replace(':','')}00\\r\\nDTEND:${d}T${x.end.replace(':','')}00\\r\\nSUMMARY:${x.title}\\r\\nEND:VEVENT\\r\\n`});o+='END:VCALENDAR\\r\\n';let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o],{type:'text/calendar'}));a.download='DOCH20_plan.ics';a.click()}
-function nav(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));({home,calendar,plan:planView,road,more}[v]||home)()}document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>nav(b.dataset.view));
-Promise.all([fetch('/api/plan').then(r=>r.json()),fetch('/api/foods').then(r=>r.json()),fetch('/api/bikes').then(r=>r.json()),initCloud()]).then(([p,f,b])=>{plan=p;foods=f;bikes=b;home()});
+function nav(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));({home,calendar,workouts,road,more}[v]||home)()}document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>nav(b.dataset.view));
+Promise.all([fetch('/api/plan').then(r=>r.json()),fetch('/api/foods').then(r=>r.json()),fetch('/api/bikes').then(r=>r.json()),initCloud()]).then(async([p,f,b])=>{plan=p;foods=f;bikes=b;await loadWorkouts();home()});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/service-worker.js');
