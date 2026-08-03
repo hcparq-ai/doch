@@ -102,3 +102,8 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .activity-metric span{font-size:10px;color:var(--muted)}
 .source-strava{color:#fc4c02}
 .back-row{display:flex;justify-content:space-between;align-items:center}
+
+
+.diary-error{border-color:#7b2929!important;background:#201111!important}
+.diary-error code{display:block;white-space:pre-wrap;color:#ffb5b5;font-size:11px;margin-top:8px}
+.refresh-row{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}

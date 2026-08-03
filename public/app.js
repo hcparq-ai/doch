@@ -13,18 +13,39 @@ function toast(msg){
  document.body.appendChild(el);
  setTimeout(()=>el.remove(),2200);
 }
-async function loadWorkouts(){
+
+async function loadWorkouts(force=false){
  state.workouts=state.workouts||[];
- if(cloud.user&&cloud.client){
-  try{
-   const {data,error}=await cloud.client.from('workouts').select('*').order('date',{ascending:false}).order('created_at',{ascending:false});
-   if(error)throw error;
-   state.workouts=data||[];
-   localStorage.setItem(STORE,JSON.stringify(state));
-  }catch(e){console.warn('workouts load failed',e)}
+ state.workoutLoadError='';
+ if(!cloud.user||!cloud.client)return state.workouts;
+ try{
+  const {data,error}=await cloud.client
+   .from('workouts')
+   .select('*')
+   .order('date',{ascending:false})
+   .order('created_at',{ascending:false});
+  if(error)throw error;
+  state.workouts=Array.isArray(data)?data:[];
+  localStorage.setItem(STORE,JSON.stringify(state));
+  return state.workouts;
+ }catch(e){
+  console.error('loadWorkouts failed',e);
+  state.workoutLoadError=e?.message||String(e);
+  if(force)throw e;
+  return state.workouts||[];
  }
- return state.workouts;
 }
+async function reloadDiary(){
+ try{
+  await loadWorkouts(true);
+  toast(`${state.workouts.length} entrenamientos cargados`);
+  workouts();
+ }catch(e){
+  alert(`No se pudo cargar el Diario: ${e.message||e}`);
+  workouts();
+ }
+}
+
 function workoutIcon(t){return ({ruta:'🚴',gravel:'🟤',rodillo:'🌀',brevet:'🏁',gimnasio:'🏋️',kinesiologia:'🦵'})[t]||'🚴'}
 function durationLabel(min){min=Number(min)||0;const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m} min`}
 
@@ -84,6 +105,8 @@ async function workouts(){
  const km=w.reduce((s,x)=>s+(Number(x.distance)||0),0);
  const mins=w.reduce((s,x)=>s+(Number(x.duration)||0),0);
  view.innerHTML=`<div class="section-title"><h2>Diario de entrenamiento</h2><button class="secondary" onclick="newWorkout()">Nuevo</button></div>
+ <div class="refresh-row"><button class="secondary" onclick="reloadDiary()">↻ RECARGAR DIARIO</button></div>
+ ${state.workoutLoadError?`<div class="card diary-error"><b>Error al consultar Supabase</b><code>${state.workoutLoadError}</code></div>`:''}
  <div class="workout-summary"><div class="card"><div class="tiny">SESIONES</div><div class="metric">${w.length}</div></div><div class="card"><div class="tiny">KM</div><div class="metric">${km.toFixed(0)}</div></div><div class="card"><div class="tiny">HORAS</div><div class="metric">${(mins/60).toFixed(1)}</div></div></div>
  <div class="card workout-list">${w.length?w.map(x=>`<div class="item" onclick="openWorkoutDetail('${x.id}')"><div class="icon">${workoutIcon(x.type)}</div><div class="item-main"><div class="item-title">${x.type.charAt(0).toUpperCase()+x.type.slice(1)} · ${Number(x.distance||0).toFixed(1)} km</div><div class="item-meta">${x.date} · ${durationLabel(x.duration)} · ${x.elevation||0} m+</div><div class="item-meta">RPE ${x.rpe??'-'} · Rodilla ${x.knee_pain??'-'}/10</div>${x.notes?`<div class="item-meta">${x.notes}</div>`:''}</div><button class="secondary danger" onclick="event.stopPropagation();deleteWorkout('${x.id}')">×</button></div>`).join(''):'<p class="muted">Todavía no hay entrenamientos registrados.</p>'}</div>
  <button class="fab" onclick="newWorkout()">＋</button>`;
@@ -355,7 +378,7 @@ async function syncStrava(){
  try{
   toast('Sincronizando Strava...');
   const data=await stravaRequest('/api/strava/sync',{method:'POST'});
-  await loadWorkouts();
+  await loadWorkouts(true);
   toast(`${data.imported} actividades sincronizadas`);
   stravaModule();
  }catch(e){alert(e.message)}
@@ -530,10 +553,10 @@ async function initCloud(){
   cloud.configured=true;
   const {data}=await cloud.client.auth.getSession();
   cloud.user=data.session?.user||null;
-  if(cloud.user){await loadCloudState();await loadWorkouts();await loadNutritionLogs();await loadBrevets();}
+  if(cloud.user){await loadCloudState();await loadWorkouts(true);await loadNutritionLogs();await loadBrevets();}
   cloud.client.auth.onAuthStateChange(async(_event,session)=>{
    cloud.user=session?.user||null;
-   if(cloud.user){await loadCloudState();await loadWorkouts();await loadNutritionLogs();await loadBrevets();}
+   if(cloud.user){await loadCloudState();await loadWorkouts(true);await loadNutritionLogs();await loadBrevets();}
    else home();
   });
   return true;
@@ -581,7 +604,7 @@ async function submitAuth(mode){
  if(result.error){authMessage.textContent=result.error.message;return}
  authMessage.textContent=mode==='signup'?'Cuenta creada. Revisa tu email si se solicita confirmación.':'Sesión iniciada.';
  cloud.user=result.data.user||result.data.session?.user||null;
- if(cloud.user){await loadCloudState();await loadWorkouts();await loadNutritionLogs();await loadBrevets();}
+ if(cloud.user){await loadCloudState();await loadWorkouts(true);await loadNutritionLogs();await loadBrevets();}
 }
 async function account(){
  if(!cloud.configured){
