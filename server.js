@@ -12,8 +12,8 @@ http.createServer((req,res)=>{
      supabaseAnonKey:process.env.SUPABASE_ANON_KEY||''
    }))
  }
- if(u==='/health'){res.writeHead(200,{'Content-Type':mime['.json']});return res.end(JSON.stringify({ok:true,version:'7.0.0'}))}
+ if(u==='/health'){res.writeHead(200,{'Content-Type':mime['.json']});return res.end(JSON.stringify({ok:true,version:'8.0.0'}))}
  if(u==='/')u='/index.html';let f=path.join(PUBLIC,u);
  if(!f.startsWith(PUBLIC)){res.writeHead(403);return res.end('Forbidden')}
  fs.stat(f,(e,s)=>{if(e||!s.isFile())f=path.join(PUBLIC,'index.html');res.writeHead(200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'});fs.createReadStream(f).pipe(res)})
-}).listen(PORT,()=>console.log(`DOCH20 V7 en http://localhost:${PORT}`));
+}).listen(PORT,()=>console.log(`DOCH20 V8 en http://localhost:${PORT}`));
