@@ -1,4 +1,19 @@
 
+function performanceDateRangeDays(days){
+ const output=[];
+ const now=new Date();
+ now.setHours(0,0,0,0);
+
+ for(let index=days-1;index>=0;index--){
+  const date=new Date(now);
+  date.setDate(date.getDate()-index);
+  output.push(date.toISOString().slice(0,10));
+ }
+
+ return output;
+}
+
+
 function trainingLoadForWorkout(workout){
  const w=typeof normalizeWorkout==='function'?normalizeWorkout(workout):workout;
  const minutes=Math.max(0,Number(w.duration||0));
@@ -22,7 +37,7 @@ function trainingLoadForWorkout(workout){
  return Math.max(0,Math.round(load));
 }
 function performanceDailySeries(days=365){
- const keys=dateRangeDays(days);
+ const keys=performanceDateRangeDays(days);
  const map=Object.fromEntries(keys.map(k=>[k,0]));
  const workouts=typeof normalizeWorkouts==='function'?normalizeWorkouts(state.workouts||[]):state.workouts||[];
  workouts.forEach(w=>{
