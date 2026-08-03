@@ -178,7 +178,7 @@ http.createServer(async (req,res) => {
     const url = new URL(req.url, BASE);
 
     if (url.pathname === '/health') {
-      return json(res,200,{ok:true,version:'9.0.0',stravaConfigured:configured()});
+      return json(res,200,{ok:true,version:'10.0.0',stravaConfigured:configured()});
     }
     if (url.pathname === '/api/config') {
       return json(res,200,{supabaseUrl:SUPABASE_URL,supabaseAnonKey:SUPABASE_ANON_KEY});
@@ -280,4 +280,4 @@ http.createServer(async (req,res) => {
     console.error(e);
     json(res,500,{error:e.message || 'Error interno'});
   }
-}).listen(PORT,()=>console.log(`DOCH20 V9 en http://localhost:${PORT}`));
+}).listen(PORT,()=>console.log(`DOCH20 V10 en http://localhost:${PORT}`));
