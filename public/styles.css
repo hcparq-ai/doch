@@ -107,3 +107,16 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .diary-error{border-color:#7b2929!important;background:#201111!important}
 .diary-error code{display:block;white-space:pre-wrap;color:#ffb5b5;font-size:11px;margin-top:8px}
 .refresh-row{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+
+
+.readiness-score{text-align:center;padding:18px}
+.readiness-score strong{display:block;font-size:64px;line-height:1;font-weight:1000}
+.readiness-score span{font-size:11px;color:var(--muted)}
+.readiness-good strong{color:var(--green)}
+.readiness-mid strong{color:var(--yellow)}
+.readiness-low strong{color:#ff6f61}
+.checkin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.trend-row{display:grid;grid-template-columns:86px 1fr 42px;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.trend-bar{height:8px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.trend-bar i{display:block;height:100%;background:var(--yellow)}
+.recovery-note{font-size:13px;line-height:1.5}

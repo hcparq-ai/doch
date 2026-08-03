@@ -524,13 +524,76 @@ function renderRoadToParis(){
  <div class="card"><div class="bar"><span>Próximo objetivo</span><b>${longest<200?'200 km':longest<300?'300 km':longest<400?'400 km':longest<600?'600 km':longest<1000?'1.000 km':'PBP 1.200 km'}</b></div><div class="bar"><span>Mayor distancia registrada</span><b>${longest.toFixed(1)} km</b></div><div class="bar"><span>Diagnóstico</span><b class="${readiness>=75?'status-good':'status-warn'}">${readiness>=75?'Volumen sólido':'Seguir acumulando base'}</b></div></div>`;
 }
 
+
+async function loadCheckins(){
+ state.checkins=state.checkins||[];
+ if(cloud.user&&cloud.client){
+  try{
+   const {data,error}=await cloud.client.from('daily_checkins').select('*').order('checkin_date',{ascending:false}).limit(60);
+   if(error)throw error;
+   state.checkins=data||[];
+   localStorage.setItem(STORE,JSON.stringify(state));
+  }catch(e){console.warn('checkins load failed',e)}
+ }
+ return state.checkins;
+}
+function readinessScore(c){
+ if(!c)return 0;
+ const sleep=Math.min(100,(Number(c.sleep_hours||0)/8)*100);
+ const quality=(Number(c.sleep_quality||0)/5)*100;
+ const fatigue=100-(Number(c.fatigue||0)*10);
+ const knee=100-(Number(c.knee_pain||0)*10);
+ const motivation=Number(c.motivation||0)*10;
+ return Math.max(0,Math.min(100,Math.round(sleep*.28+quality*.18+fatigue*.22+knee*.20+motivation*.12)));
+}
+function readinessLabel(score){
+ if(score>=75)return {text:'Buena disposición',cls:'readiness-good',note:'Puedes realizar la sesión prevista, manteniendo atención a la rodilla.'};
+ if(score>=50)return {text:'Carga moderada',cls:'readiness-mid',note:'Prioriza Z1–Z2 y reduce intensidad si aumenta el dolor.'};
+ return {text:'Recuperación prioritaria',cls:'readiness-low',note:'Considera descanso o una sesión muy suave. Dolor persistente requiere evaluación profesional.'};
+}
+async function recoveryModule(){
+ await loadCheckins();
+ const list=state.checkins||[],latest=list[0]||null,score=readinessScore(latest),label=readinessLabel(score);
+ const last14=list.slice(0,14);
+ const avgPain=last14.length?last14.reduce((s,x)=>s+Number(x.knee_pain||0),0)/last14.length:0;
+ const avgSleep=last14.length?last14.reduce((s,x)=>s+Number(x.sleep_hours||0),0)/last14.length:0;
+ view.innerHTML=`<div class="section-title"><h2>Recuperación</h2><button class="secondary" onclick="newCheckin()">Registrar hoy</button></div>
+ ${latest?`<div class="card readiness-score ${label.cls}"><span>DISPOSICIÓN DE HOY</span><strong>${score}</strong><h2>${label.text}</h2><p class="recovery-note">${label.note}</p></div>`:'<div class="card"><p class="muted">Aún no hay registros diarios.</p></div>'}
+ <div class="checkin-grid"><div class="card"><div class="tiny">SUEÑO 14 DÍAS</div><div class="dashboard-number">${avgSleep.toFixed(1)} h</div></div><div class="card"><div class="tiny">RODILLA 14 DÍAS</div><div class="dashboard-number">${avgPain.toFixed(1)}/10</div></div></div>
+ <div class="card"><div class="eyebrow">Últimos registros</div>${last14.map(c=>{const s=readinessScore(c);return `<div class="trend-row"><span>${c.checkin_date}</span><div class="trend-bar"><i style="width:${s}%"></i></div><b>${s}</b></div>`}).join('')||'<p class="muted">Sin datos.</p>'}</div>
+ <div class="card"><p class="muted">Puntuación orientativa: no diagnostica lesiones ni sustituye indicaciones médicas o de kinesiología.</p></div>`;
+}
+function newCheckin(){
+ const current=(state.checkins||[]).find(x=>x.checkin_date===today())||{};
+ view.innerHTML=`<div class="section-title"><h2>Registro diario</h2><button class="secondary" onclick="recoveryModule()">Volver</button></div><div class="card">
+ <div class="field"><label>Fecha</label><input id="cDate" type="date" value="${current.checkin_date||today()}"></div>
+ <div class="dual"><div class="field"><label>Horas de sueño</label><input id="cSleep" type="number" step="0.1" value="${current.sleep_hours??7.5}"></div><div class="field"><label>Calidad 1–5</label><input id="cQuality" type="number" min="1" max="5" value="${current.sleep_quality??4}"></div></div>
+ <div class="dual"><div class="field"><label>Fatiga 1–10</label><input id="cFatigue" type="number" min="1" max="10" value="${current.fatigue??4}"></div><div class="field"><label>Dolor rodilla 0–10</label><input id="cKnee" type="number" min="0" max="10" value="${current.knee_pain??0}"></div></div>
+ <div class="dual"><div class="field"><label>Motivación 1–10</label><input id="cMotivation" type="number" min="1" max="10" value="${current.motivation??8}"></div><div class="field"><label>FC reposo</label><input id="cHr" type="number" value="${current.resting_hr??''}"></div></div>
+ <div class="field"><label>Peso kg</label><input id="cWeight" type="number" step="0.1" value="${current.weight??80}"></div>
+ <div class="field"><label>Notas</label><textarea id="cNotes">${current.notes||''}</textarea></div>
+ <button class="primary" onclick="saveCheckin()">GUARDAR REGISTRO</button></div>`;
+}
+async function saveCheckin(){
+ const row={checkin_date:cDate.value,sleep_hours:Number(cSleep.value)||0,sleep_quality:Number(cQuality.value)||1,fatigue:Number(cFatigue.value)||1,knee_pain:Number(cKnee.value)||0,motivation:Number(cMotivation.value)||1,resting_hr:cHr.value?Number(cHr.value):null,weight:cWeight.value?Number(cWeight.value):null,notes:cNotes.value.trim()};
+ state.checkins=state.checkins||[];
+ if(cloud.user&&cloud.client){
+  const {data,error}=await cloud.client.from('daily_checkins').upsert({...row,user_id:cloud.user.id},{onConflict:'user_id,checkin_date'}).select().single();
+  if(error){alert(error.message);return}
+  state.checkins=state.checkins.filter(x=>x.checkin_date!==row.checkin_date);state.checkins.unshift(data);
+ }else{
+  state.checkins=state.checkins.filter(x=>x.checkin_date!==row.checkin_date);state.checkins.unshift({...row,id:'local-'+Date.now()});
+ }
+ localStorage.setItem(STORE,JSON.stringify(state));toast(cloud.user?'Registro sincronizado':'Registro guardado');recoveryModule();
+}
+
 function home(){renderDashboard()}
 function calendar(){let y=currentMonth.getFullYear(),m=currentMonth.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),offset=(first.getDay()+6)%7,cells=[];for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=last.getDate();d++)cells.push(new Date(y,m,d));view.innerHTML=`<div class="section-title"><h2>Calendario</h2><button class="secondary" onclick="goToday()">Hoy</button></div><div class="card"><div class="month-head"><button class="secondary" onclick="moveMonth(-1)">‹</button><b>${first.toLocaleDateString('es-CL',{month:'long',year:'numeric'})}</b><button class="secondary" onclick="moveMonth(1)">›</button></div><div class="month-grid">${['L','M','X','J','V','S','D'].map(x=>`<div class="dow">${x}</div>`).join('')}${cells.map(d=>{if(!d)return '<div class="day empty"></div>';let ds=iso(d),ev=plan.filter(x=>x.date===ds),cls='day';if(ds===today())cls+=' today';if(ds===state.selectedDate)cls+=' selected';return `<div class="${cls}" onclick="selectDate('${ds}')">${d.getDate()}<div class="dots">${ev.slice(0,3).map(x=>`<i class="dot ${x.type}"></i>`).join('')}</div></div>`}).join('')}</div></div><div class="card">${state.selectedDate?plan.filter(x=>x.date===state.selectedDate).map(x=>`<div onclick="openSession(${plan.indexOf(x)})">${item(x)}</div>`).join('')||'<p class="muted">Sin actividades.</p>':'<p class="muted">Selecciona un día.</p>'}</div>`}
 function selectDate(d){state.selectedDate=d;save();calendar()}function moveMonth(n){currentMonth=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+n,1);calendar()}function goToday(){let d=new Date();currentMonth=new Date(d.getFullYear(),d.getMonth(),1);state.selectedDate=today();calendar()}
 function planView(){view.innerHTML=`<div class="section-title"><h2>Entrenamientos</h2><button class="secondary" onclick="exportICS()">Exportar .ics</button></div><div class="card">${plan.map((x,i)=>`<div onclick="openSession(${i})">${item(x)}</div>`).join('')}</div>`}
 function legacyRoad(){view.innerHTML=`<section class="hero"><div class="eyebrow">Proyecto activo</div><h1>Paris–Brest–Paris 2027</h1><p class="muted">1.200 km · Road to Paris</p></section><div class="card">${[['200 km',1],['300 km',1],['400 km',0],['600 km',0],['1.000 km',0],['PBP 1.200 km',0]].map(x=>`<div class="bar"><b>${x[0]}</b><span class="${x[1]?'green':'muted'}">${x[1]?'✓':'○'}</span></div>`).join('')}</div>`}
 function road(){renderRoadToParis()}
-function more(){view.innerHTML=`<div class="section-title"><h2>Módulos</h2></div><div class="card"><div class="item" onclick="stravaModule()"><div class="icon">🟠</div><div class="item-main"><div class="item-title">Strava</div><div class="item-meta">Sincronizar actividades de ciclismo</div></div></div><div class="item" onclick="account()"><div class="icon">☁️</div><div class="item-main"><div class="item-title">Cuenta y nube</div><div class="item-meta">Inicio de sesión, respaldo y sincronización</div></div></div><div class="item" onclick="brevetsModule()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Gestión de brevets</div><div class="item-meta">Controles, progreso y modo en carrera</div></div></div><div class="item" onclick="nutritionModule()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición para brevets</div><div class="item-meta">Plan, alimentos y consumo real</div></div></div><div class="item" onclick="profile()"><div class="icon">👤</div><div class="item-main"><div class="item-title">Perfil y peso</div><div class="item-meta">Datos deportivos e historial</div></div></div><div class="item" onclick="health()"><div class="icon">🦵</div><div class="item-main"><div class="item-title">Rodilla</div><div class="item-meta">Seguimiento de dolor</div></div></div><div class="item" onclick="nutrition()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición avanzada</div><div class="item-meta">Cálculo total y alimentos</div></div></div><div class="item" onclick="bike()"><div class="icon">🚲</div><div class="item-main"><div class="item-title">Bicicleta</div><div class="item-meta">Componentes y mantenciones</div></div></div><div class="item" onclick="brevet()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Modo Brevet</div><div class="item-meta">Información esencial</div></div></div></div>`}
+function more(){view.innerHTML=`<div class="section-title"><h2>Módulos</h2></div><div class="card"><div class="item" onclick="stravaModule()"><div class="icon">🟠</div><div class="item-main"><div class="item-title">Strava</div><div class="item-meta">Sincronizar actividades de ciclismo</div></div></div><div class="item" onclick="account()"><div class="icon">☁️</div><div class="item-main"><div class="item-title">Cuenta y nube</div><div class="item-meta">Inicio de sesión, respaldo y sincronización</div></div></div><div class="item" onclick="brevetsModule()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Gestión de brevets</div><div class="item-meta">Controles, progreso y modo en carrera</div></div></div><div class="item" onclick="recoveryModule()"><div class="icon">♥</div><div class="item-main"><div class="item-title">Recuperación y rodilla</div><div class="item-meta">Sueño, fatiga, dolor y disposición diaria</div></div></div><div class="item" onclick="nutritionModule()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición para brevets</div><div class="item-meta">Plan, alimentos y consumo real</div></div></div><div class="item" onclick="profile()"><div class="icon">👤</div><div class="item-main"><div class="item-title">Perfil y peso</div><div class="item-meta">Datos deportivos e historial</div></div></div><div class="item" onclick="health()"><div class="icon">🦵</div><div class="item-main"><div class="item-title">Rodilla</div><div class="item-meta">Seguimiento de dolor</div></div></div><div class="item" onclick="nutrition()"><div class="icon">🍌</div><div class="item-main"><div class="item-title">Nutrición avanzada</div><div class="item-meta">Cálculo total y alimentos</div></div></div><div class="item" onclick="bike()"><div class="icon">🚲</div><div class="item-main"><div class="item-title">Bicicleta</div><div class="item-meta">Componentes y mantenciones</div></div></div><div class="item" onclick="brevet()"><div class="icon">🏁</div><div class="item-main"><div class="item-title">Modo Brevet</div><div class="item-meta">Información esencial</div></div></div></div>`}
 function openSession(i){const x=plan[i]||next(),l=state.logs[key(x)]||{};view.innerHTML=`<div class="section-title"><h2>Registro</h2><button class="secondary" onclick="planView()">Volver</button></div><section class="hero"><div class="eyebrow">${x.type}</div><h1>${x.title}</h1><p class="muted">${x.date} · ${x.time}–${x.end}${x.km?` · ${x.km} km`:''}</p><p>${x.route||''}</p></section><div class="card"><div class="field"><label>Estado</label><select id="st"><option value="pending">Pendiente</option><option value="done">Realizado</option><option value="skipped">No realizado</option><option value="modified">Modificado</option></select></div><div class="field"><label>Kilómetros reales</label><input id="rk" type="number" step="0.1" value="${l.realKm??x.km??0}"></div><div class="field"><label>Dolor de rodilla 0–10</label><input id="rp" type="number" min="0" max="10" value="${l.pain??0}"></div><div class="field"><label>Notas</label><textarea id="notes">${l.notes||''}</textarea></div><button class="primary" onclick='saveSession(${JSON.stringify(key(x))})'>GUARDAR SESIÓN</button></div>`;st.value=l.status||'pending'}
 function saveSession(k){const prev=state.logs[k]?.realKm||0;state.logs[k]={status:st.value,realKm:+rk.value||0,pain:+rp.value||0,notes:notes.value};state.bikeKm+=Math.max(0,(+rk.value||0)-prev);save();home()}
 function health(){const l=state.knee.at(-1);view.innerHTML=`<div class="section-title"><h2>Rodilla</h2></div><div class="card"><div class="field"><label>Dolor durante</label><input id="pd" type="number" min="0" max="10" value="${l?.during??0}"></div><div class="field"><label>Dolor después</label><input id="pa" type="number" min="0" max="10" value="${l?.after??0}"></div><div class="field"><label>Dolor al día siguiente</label><input id="pn" type="number" min="0" max="10" value="${l?.next??0}"></div><button class="primary" onclick="saveKnee()">GUARDAR</button></div>`}
