@@ -1,4 +1,36 @@
-const C='doch20-v4',A=['/','/index.html','/styles.css','/app.js','/manifest.webmanifest','/icon.svg'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(x=>x.addAll(A))));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
-self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).then(r=>{let c=r.clone();caches.open(C).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/index.html')))));
+const CACHE='doch20-v15';
+const CORE=['/','/index.html','/styles.css','/app.js?v=15.0.0','/manifest.webmanifest','/icon.svg'];
+
+self.addEventListener('install',event=>{
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil(
+    caches.keys()
+      .then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))))
+      .then(()=>self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch',event=>{
+  const req=event.request;
+  if(req.method!=='GET')return;
+  const url=new URL(req.url);
+
+  if(url.pathname.startsWith('/api/')){
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  event.respondWith(
+    fetch(req)
+      .then(response=>{
+        const copy=response.clone();
+        caches.open(CACHE).then(cache=>cache.put(req,copy));
+        return response;
+      })
+      .catch(()=>caches.match(req).then(hit=>hit||caches.match('/index.html')))
+  );
+});
