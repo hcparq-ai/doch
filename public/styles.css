@@ -50,3 +50,8 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .brevet-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .brevet-actions button{padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-weight:800}
 .control-list .bar.current{background:#221f10;border-radius:10px;padding-left:10px;padding-right:10px}
+
+
+.strava-card{border-color:#4f2415!important}
+.strava-mark{color:#fc4c02;font-weight:1000;letter-spacing:.5px}
+.strava-actions{display:grid;gap:10px}
