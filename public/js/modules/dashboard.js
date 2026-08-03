@@ -50,7 +50,7 @@ function dashboardRecommendation(){
  return performanceRecommendation(performanceData());
 }
 function renderDashboard(){
- const s=dashboardStats(),quality=typeof dataQualityReport==='function'?dataQualityReport():null,period=activityPeriodMessage(s);
+ const s=dashboardStats(),quality=typeof dataQualityReport==='function'?dataQualityReport():null,period=activityPeriodMessage(s),perf=performanceEngine();
  const maxWeek=Math.max(...s.weeks.map(x=>x.km),1);
  const days=Math.max(0,Math.ceil((new Date('2026-10-09T00:00:00')-new Date())/86400000));
  const targetWeekly=250;
@@ -71,6 +71,11 @@ function renderDashboard(){
  </div>
  <div class="card"><div class="eyebrow">Objetivo semanal</div><div class="bar"><span>${weeklyStatus}</span><b>${s.weekKm.toFixed(0)} / ${targetWeekly} km</b></div><div class="progress"><i style="width:${Math.min(100,s.weekKm/targetWeekly*100)}%"></i></div></div>
  <div class="card"><div class="eyebrow">Últimas 8 semanas</div>${s.weeks.some(x=>x.km>0)?`<div class="week-chart">${s.weeks.map(x=>`<div class="week-column"><b>${x.km.toFixed(0)}</b><i style="height:${Math.max(3,x.km/maxWeek*110)}px"></i><small>${x.label}</small></div>`).join('')}</div>`:'<p class="muted">No hay salidas de ciclismo dentro de estas ocho semanas.</p>'}</div>
+ <div class="card"><div class="eyebrow">MOTOR DE RENDIMIENTO</div><div class="performance-grid">
+  <div><b>${perf.current.ctl.toFixed(0)}</b><span>CTL</span></div>
+  <div><b>${perf.current.atl.toFixed(0)}</b><span>ATL</span></div>
+  <div><b>${perf.current.tsb.toFixed(0)}</b><span>TSB</span></div>
+ </div><button class="secondary" onclick="performanceModule()">ABRIR PERFORMANCE</button></div>
  <div class="card"><div class="eyebrow">Métricas importadas</div><div class="metric-row"><div><b>${s.avgHr?s.avgHr.toFixed(0):'—'}</b><span>FC media</span></div><div><b>${s.avgWatts?s.avgWatts.toFixed(0):'—'}</b><span>Potencia media</span></div><div><b>${s.longest?longest.toFixed(0):'—'}</b><span>Salida más larga km</span></div></div></div>
  ${last?`<div class="card activity-highlight"><div class="eyebrow">Último registro real</div><h2>${last.activity_name||last.type}</h2><p class="muted">${last.date} · ${last.source||'DOCH20'}</p><div class="metric-row"><div><b>${Number(last.distance||0).toFixed(1)}</b><span>km</span></div><div><b>${durationLabel(last.duration)}</b><span>duración</span></div><div><b>${Number(last.elevation||0).toFixed(0)}</b><span>m+</span></div></div></div>`:''}
  <div class="card"><div class="eyebrow">Calidad de datos</div><div class="bar"><span>Registros cargados</span><b>${quality?.total??s.all.length}</b></div><div class="bar"><span>Actividades de ciclismo utilizables</span><b>${quality?.rideCount??s.rides.length}</b></div><div class="bar"><span>Origen Strava</span><b>${quality?.stravaCount??0}</b></div></div>`;

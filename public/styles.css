@@ -185,3 +185,9 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 
 
 .period-note{font-size:9px;color:var(--muted);margin-top:6px;line-height:1.25}
+
+
+.simulation-box{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.simulation-box>div{text-align:center;background:var(--surface2);padding:12px 6px;border-radius:12px}
+.simulation-box b{display:block;font-size:20px}
+.simulation-box span{font-size:9px;color:var(--muted)}
