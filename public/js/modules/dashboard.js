@@ -37,6 +37,12 @@ function dashboardStats(){
   totalKm:sumWorkout(all,'distance')
  };
 }
+
+function dashboardRecommendation(){
+ if(typeof performanceData!=='function')return {title:'Sincroniza tus actividades',text:'Conecta Strava para activar recomendaciones personalizadas.',cls:'balance-neutral'};
+ const p=performanceData(),rec=performanceRecommendation(p);
+ return rec;
+}
 function renderDashboard(){
  const s=dashboardStats();
  const maxWeek=Math.max(...s.weeks.map(x=>x.km),1);
@@ -44,8 +50,9 @@ function renderDashboard(){
  const days=Math.max(0,Math.ceil((new Date('2026-10-09T00:00:00')-new Date())/86400000));
  const targetWeekly=250;
  const weeklyStatus=s.weekKm>=targetWeekly?'Objetivo semanal cumplido':`${Math.max(0,targetWeekly-s.weekKm).toFixed(0)} km por completar`;
- const last=s.latest;
+ const last=s.latest,rec=dashboardRecommendation();
  view.innerHTML=`<div class="section-title"><h2>Dashboard</h2><span class="badge">STRAVA + DOCH20</span></div>
+ <div class="card recommendation-card"><div class="eyebrow">DOCH20 HOY</div><h2 class="${rec.cls}">${rec.title}</h2><p class="muted">${rec.text}</p><button class="secondary" onclick="performanceModule()">VER PERFORMANCE</button></div>
  <section class="hero"><div class="eyebrow">Road to 1.000 km</div><h1>${pct}% completado</h1><p class="muted">${s.totalKm.toFixed(0)} km registrados · ${days} días al objetivo</p><div class="progress"><i style="width:${pct}%"></i></div></section>
  <div class="dashboard-grid">
   <div class="card"><div class="tiny">KM ESTA SEMANA</div><div class="dashboard-number">${s.weekKm.toFixed(0)} <span class="dashboard-unit">km</span></div></div>

@@ -148,3 +148,15 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .disclaimer-box{font-size:12px;line-height:1.5}
 
 .menu-arrow{font-size:25px;color:var(--muted);padding-left:8px}.version-chip{font-size:10px;color:var(--muted)}
+
+
+.recommendation-card{border-color:#3e4650!important}
+.performance-svg{display:block;width:100%;height:210px;margin-top:10px;overflow:visible}
+.performance-svg polyline{fill:none;stroke-width:1.8;vector-effect:non-scaling-stroke}
+.chart-axis{stroke:#343b43;stroke-width:.5;vector-effect:non-scaling-stroke}
+.chart-fit{stroke:#49d17d}
+.chart-fatigue{stroke:#ffcf32}
+.chart-form{stroke:#ff7167}
+.chart-legend{display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:10px;color:var(--muted)}
+.chart-legend i{display:inline-block;width:14px;height:3px;margin-right:5px;vertical-align:middle}
+.legend-fit{background:#49d17d}.legend-fatigue{background:#ffcf32}.legend-form{background:#ff7167}
