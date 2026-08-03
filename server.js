@@ -156,6 +156,12 @@ async function importActivities(userId, accessToken, page=1, perPage=50) {
     external_id:String(a.id),
     average_heartrate:a.average_heartrate ?? null,
     average_watts:a.average_watts ?? null,
+    average_speed:a.average_speed ?? null,
+    max_speed:a.max_speed ?? null,
+    average_cadence:a.average_cadence ?? null,
+    calories:a.calories ?? null,
+    summary_polyline:a.map?.summary_polyline ?? null,
+    strava_url:`https://www.strava.com/activities/${a.id}`,
     activity_name:a.name || 'Actividad Strava'
   }));
   if (!rows.length) return {imported:0,total:0};
@@ -178,7 +184,7 @@ http.createServer(async (req,res) => {
     const url = new URL(req.url, BASE);
 
     if (url.pathname === '/health') {
-      return json(res,200,{ok:true,version:'11.0.0',stravaConfigured:configured()});
+      return json(res,200,{ok:true,version:'12.0.0',stravaConfigured:configured()});
     }
     if (url.pathname === '/api/config') {
       return json(res,200,{supabaseUrl:SUPABASE_URL,supabaseAnonKey:SUPABASE_ANON_KEY});
@@ -280,4 +286,4 @@ http.createServer(async (req,res) => {
     console.error(e);
     json(res,500,{error:e.message || 'Error interno'});
   }
-}).listen(PORT,()=>console.log(`DOCH20 V11 en http://localhost:${PORT}`));
+}).listen(PORT,()=>console.log(`DOCH20 V12 en http://localhost:${PORT}`));

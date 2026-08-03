@@ -27,6 +27,57 @@ async function loadWorkouts(){
 }
 function workoutIcon(t){return ({ruta:'🚴',gravel:'🟤',rodillo:'🌀',brevet:'🏁',gimnasio:'🏋️',kinesiologia:'🦵'})[t]||'🚴'}
 function durationLabel(min){min=Number(min)||0;const h=Math.floor(min/60),m=min%60;return h?`${h}h ${m}m`:`${m} min`}
+
+function decodePolyline(str,precision=5){
+ if(!str)return[];
+ let index=0,lat=0,lng=0,coordinates=[],shift,result,byte;
+ const factor=Math.pow(10,precision);
+ while(index<str.length){
+  shift=0;result=0;
+  do{byte=str.charCodeAt(index++)-63;result|=(byte&0x1f)<<shift;shift+=5}while(byte>=0x20);
+  lat+=(result&1)?~(result>>1):(result>>1);
+  shift=0;result=0;
+  do{byte=str.charCodeAt(index++)-63;result|=(byte&0x1f)<<shift;shift+=5}while(byte>=0x20);
+  lng+=(result&1)?~(result>>1):(result>>1);
+  coordinates.push([lat/factor,lng/factor]);
+ }
+ return coordinates;
+}
+function speedKmh(ms){return ms?Number(ms)*3.6:0}
+function openWorkoutDetail(id){
+ const x=(state.workouts||[]).find(w=>String(w.id)===String(id));
+ if(!x)return;
+ view.innerHTML=`<div class="back-row"><div class="section-title"><h2>Detalle de actividad</h2></div><button class="secondary" onclick="workouts()">Volver</button></div>
+ <section class="hero activity-highlight"><div class="eyebrow ${x.source==='strava'?'source-strava':''}">${x.source==='strava'?'STRAVA':'DOCH20'}</div><h1>${x.activity_name||x.type}</h1><p class="muted">${x.date} · ${x.type}</p></section>
+ <div class="activity-grid">
+  <div class="activity-metric"><b>${Number(x.distance||0).toFixed(1)}</b><span>km</span></div>
+  <div class="activity-metric"><b>${durationLabel(x.duration)}</b><span>duración</span></div>
+  <div class="activity-metric"><b>${x.elevation||0}</b><span>m+</span></div>
+  <div class="activity-metric"><b>${speedKmh(x.average_speed).toFixed(1)}</b><span>km/h media</span></div>
+  <div class="activity-metric"><b>${speedKmh(x.max_speed).toFixed(1)}</b><span>km/h máxima</span></div>
+  <div class="activity-metric"><b>${x.average_heartrate?Number(x.average_heartrate).toFixed(0):'—'}</b><span>FC media</span></div>
+  <div class="activity-metric"><b>${x.average_watts?Number(x.average_watts).toFixed(0):'—'}</b><span>potencia media</span></div>
+  <div class="activity-metric"><b>${x.average_cadence?Number(x.average_cadence).toFixed(0):'—'}</b><span>cadencia</span></div>
+  <div class="activity-metric"><b>${x.calories?Number(x.calories).toFixed(0):'—'}</b><span>calorías</span></div>
+  <div class="activity-metric"><b>${x.rpe??'—'}</b><span>RPE</span></div>
+ </div>
+ ${x.summary_polyline?'<div id="activityMap" class="activity-map"></div>':'<div class="card"><p class="muted">Esta actividad no contiene mapa disponible.</p></div>'}
+ ${x.notes?`<div class="card"><div class="eyebrow">Notas</div><p>${x.notes}</p></div>`:''}
+ ${x.strava_url?`<div class="card"><button class="primary" onclick="window.open('${x.strava_url}','_blank')">VER EN STRAVA</button></div>`:''}`;
+ if(x.summary_polyline)setTimeout(()=>renderActivityMap(x.summary_polyline),50);
+}
+function renderActivityMap(polyline){
+ if(!window.L)return;
+ const pts=decodePolyline(polyline);
+ if(!pts.length)return;
+ const map=L.map('activityMap',{zoomControl:true,attributionControl:true});
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,attribution:'© OpenStreetMap'
+ }).addTo(map);
+ const line=L.polyline(pts,{weight:4}).addTo(map);
+ map.fitBounds(line.getBounds(),{padding:[18,18]});
+}
+
 async function workouts(){
  await loadWorkouts();
  const w=state.workouts||[];
@@ -34,7 +85,7 @@ async function workouts(){
  const mins=w.reduce((s,x)=>s+(Number(x.duration)||0),0);
  view.innerHTML=`<div class="section-title"><h2>Diario de entrenamiento</h2><button class="secondary" onclick="newWorkout()">Nuevo</button></div>
  <div class="workout-summary"><div class="card"><div class="tiny">SESIONES</div><div class="metric">${w.length}</div></div><div class="card"><div class="tiny">KM</div><div class="metric">${km.toFixed(0)}</div></div><div class="card"><div class="tiny">HORAS</div><div class="metric">${(mins/60).toFixed(1)}</div></div></div>
- <div class="card workout-list">${w.length?w.map(x=>`<div class="item"><div class="icon">${workoutIcon(x.type)}</div><div class="item-main"><div class="item-title">${x.type.charAt(0).toUpperCase()+x.type.slice(1)} · ${Number(x.distance||0).toFixed(1)} km</div><div class="item-meta">${x.date} · ${durationLabel(x.duration)} · ${x.elevation||0} m+</div><div class="item-meta">RPE ${x.rpe??'-'} · Rodilla ${x.knee_pain??'-'}/10</div>${x.notes?`<div class="item-meta">${x.notes}</div>`:''}</div><button class="secondary danger" onclick="deleteWorkout('${x.id}')">×</button></div>`).join(''):'<p class="muted">Todavía no hay entrenamientos registrados.</p>'}</div>
+ <div class="card workout-list">${w.length?w.map(x=>`<div class="item" onclick="openWorkoutDetail('${x.id}')"><div class="icon">${workoutIcon(x.type)}</div><div class="item-main"><div class="item-title">${x.type.charAt(0).toUpperCase()+x.type.slice(1)} · ${Number(x.distance||0).toFixed(1)} km</div><div class="item-meta">${x.date} · ${durationLabel(x.duration)} · ${x.elevation||0} m+</div><div class="item-meta">RPE ${x.rpe??'-'} · Rodilla ${x.knee_pain??'-'}/10</div>${x.notes?`<div class="item-meta">${x.notes}</div>`:''}</div><button class="secondary danger" onclick="event.stopPropagation();deleteWorkout('${x.id}')">×</button></div>`).join(''):'<p class="muted">Todavía no hay entrenamientos registrados.</p>'}</div>
  <button class="fab" onclick="newWorkout()">＋</button>`;
 }
 function newWorkout(){
