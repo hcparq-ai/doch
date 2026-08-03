@@ -38,12 +38,19 @@ function dashboardStats(){
   totalKm:sumWorkout(rides,'distance')
  };
 }
+function activityPeriodMessage(stats){
+ if(!stats.all.length)return {week:'Sin datos cargados',month:'Sin datos cargados'};
+ return {
+  week:stats.weekly.length?'Actividad registrada':'Sin actividad esta semana',
+  month:stats.monthly.length?'Actividad registrada':'Sin actividad este mes'
+ };
+}
 function dashboardRecommendation(){
  if(typeof performanceData!=='function')return {title:'Sincroniza tus actividades',text:'Conecta Strava para activar recomendaciones personalizadas.',cls:'balance-neutral'};
  return performanceRecommendation(performanceData());
 }
 function renderDashboard(){
- const s=dashboardStats(),quality=typeof dataQualityReport==='function'?dataQualityReport():null;
+ const s=dashboardStats(),quality=typeof dataQualityReport==='function'?dataQualityReport():null,period=activityPeriodMessage(s);
  const maxWeek=Math.max(...s.weeks.map(x=>x.km),1);
  const days=Math.max(0,Math.ceil((new Date('2026-10-09T00:00:00')-new Date())/86400000));
  const targetWeekly=250;
@@ -57,10 +64,10 @@ function renderDashboard(){
  <div class="card recommendation-card"><div class="eyebrow">DOCH20 HOY</div><h2 class="${rec.cls}">${rec.title}</h2><p class="muted">${rec.text}</p><button class="secondary" onclick="performanceModule()">VER PERFORMANCE</button></div>
  <section class="hero"><div class="eyebrow">Preparación brevet 1.000 km</div><h1>${preparation}% estimado</h1><p class="muted">Mayor salida: ${longest.toFixed(0)} km · ${days} días al objetivo</p><div class="progress"><i style="width:${preparation}%"></i></div></section>
  <div class="dashboard-grid">
-  <div class="card"><div class="tiny">KM ESTA SEMANA</div><div class="dashboard-number">${s.weekKm.toFixed(0)} <span class="dashboard-unit">km</span></div></div>
-  <div class="card"><div class="tiny">HORAS ESTA SEMANA</div><div class="dashboard-number">${s.weekHours.toFixed(1)} <span class="dashboard-unit">h</span></div></div>
-  <div class="card"><div class="tiny">DESNIVEL SEMANAL</div><div class="dashboard-number">${s.weekElevation.toFixed(0)} <span class="dashboard-unit">m+</span></div></div>
-  <div class="card"><div class="tiny">KM ESTE MES</div><div class="dashboard-number">${s.monthKm.toFixed(0)} <span class="dashboard-unit">km</span></div></div>
+  <div class="card"><div class="tiny">KM ESTA SEMANA</div><div class="dashboard-number">${s.weekKm.toFixed(0)} <span class="dashboard-unit">km</span></div><div class="period-note">${period.week}</div></div>
+  <div class="card"><div class="tiny">HORAS ESTA SEMANA</div><div class="dashboard-number">${s.weekHours.toFixed(1)} <span class="dashboard-unit">h</span></div><div class="period-note">${period.week}</div></div>
+  <div class="card"><div class="tiny">DESNIVEL SEMANAL</div><div class="dashboard-number">${s.weekElevation.toFixed(0)} <span class="dashboard-unit">m+</span></div><div class="period-note">${period.week}</div></div>
+  <div class="card"><div class="tiny">KM ESTE MES</div><div class="dashboard-number">${s.monthKm.toFixed(0)} <span class="dashboard-unit">km</span></div><div class="period-note">${period.month}</div></div>
  </div>
  <div class="card"><div class="eyebrow">Objetivo semanal</div><div class="bar"><span>${weeklyStatus}</span><b>${s.weekKm.toFixed(0)} / ${targetWeekly} km</b></div><div class="progress"><i style="width:${Math.min(100,s.weekKm/targetWeekly*100)}%"></i></div></div>
  <div class="card"><div class="eyebrow">Últimas 8 semanas</div>${s.weeks.some(x=>x.km>0)?`<div class="week-chart">${s.weeks.map(x=>`<div class="week-column"><b>${x.km.toFixed(0)}</b><i style="height:${Math.max(3,x.km/maxWeek*110)}px"></i><small>${x.label}</small></div>`).join('')}</div>`:'<p class="muted">No hay salidas de ciclismo dentro de estas ocho semanas.</p>'}</div>

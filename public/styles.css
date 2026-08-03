@@ -182,3 +182,6 @@ main{padding:16px}.hero,.card{background:var(--surface);border:1px solid var(--l
 .data-health>div{text-align:center;background:var(--surface2);padding:10px;border-radius:12px}
 .data-health b{display:block;font-size:20px}
 .data-health span{font-size:9px;color:var(--muted)}
+
+
+.period-note{font-size:9px;color:var(--muted);margin-top:6px;line-height:1.25}

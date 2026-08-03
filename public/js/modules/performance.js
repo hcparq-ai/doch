@@ -34,11 +34,14 @@ function dailyLoads(days=120){
  return keys.map(date=>({date,load:map[date]}));
 }
 function ewma(values,days){
- const alpha=1/days;let value=0;
- return values.map(x=>{value=value+(x-value)*alpha;return value});
+ const alpha=1/days;
+ const nonZero=values.filter(v=>Number(v)>0);
+ const seed=nonZero.length?nonZero.slice(0,Math.min(days,nonZero.length)).reduce((a,b)=>a+b,0)/Math.min(days,nonZero.length):0;
+ let value=seed;
+ return values.map(x=>{value=value+(Number(x||0)-value)*alpha;return value});
 }
 function performanceData(){
- const daily=dailyLoads(120);
+ const daily=dailyLoads(365);
  const loads=daily.map(x=>x.load);
  const fitness=ewma(loads,42);
  const fatigue=ewma(loads,7);
@@ -49,6 +52,11 @@ function performanceData(){
   form:form.at(-1)||0,
   today:loads.at(-1)||0
  };
+ const activeLoads=loads.filter(v=>v>0);
+ const historicalAverage=activeLoads.length?activeLoads.reduce((a,b)=>a+b,0)/activeLoads.length:0;
+ const activeDays=activeLoads.length;
+ const lastActiveIndex=loads.map(v=>v>0).lastIndexOf(true);
+ const daysSinceActivity=lastActiveIndex>=0?loads.length-1-lastActiveIndex:null;
  const weeks=[];
  for(let i=11;i>=0;i--){
   const start=startOfWeek(new Date(Date.now()-i*7*86400000));
@@ -64,7 +72,7 @@ function performanceData(){
  const current4=weeks.slice(-4).reduce((s,w)=>s+w.load,0);
  const previous4=weeks.slice(-8,-4).reduce((s,w)=>s+w.load,0);
  const change=previous4>0?((current4-previous4)/previous4)*100:0;
- return {daily,loads,fitness,fatigue,form,current,weeks,current4,previous4,change};
+ return {daily,loads,fitness,fatigue,form,current,weeks,current4,previous4,change,historicalAverage,activeDays,daysSinceActivity};
 }
 function formLabel(v){
  if(v>8)return {text:'Fresco',cls:'balance-positive'};
@@ -126,5 +134,11 @@ async function performanceModule(){
  <div class="card ${Math.abs(p.change)>35?'maintenance-alert':''}"><div class="bar"><span>Cambio últimas 4 semanas</span><b class="${p.change>35?'balance-negative':p.change<-30?'balance-neutral':'balance-positive'}">${p.change>=0?'+':''}${p.change.toFixed(0)}%</b></div><p class="muted">${p.change>35?'El aumento es elevado. Revisa fatiga, sueño y dolor antes de seguir aumentando volumen.':p.change<-30?'La carga bajó de forma importante; puede corresponder a recuperación o interrupción del plan.':'La progresión reciente se mantiene dentro de un rango moderado.'}</p></div>
  <div class="card"><div class="eyebrow">Distribución de carga</div>${types.length?types.map(([type,val])=>`<div class="bar"><span>${type}</span><b>${val.toFixed(0)}</b></div>`).join(''):'<p class="muted">Sin entrenamientos suficientes.</p>'}</div>
  <div class="card"><div class="eyebrow">Diagnóstico de datos</div><div class="bar"><span>Registros totales</span><b>${typeof dataQualityReport==='function'?dataQualityReport().total:(state.workouts||[]).length}</b></div><div class="bar"><span>Ciclismo utilizable</span><b>${typeof dataQualityReport==='function'?dataQualityReport().rideCount:'—'}</b></div><div class="bar"><span>Actividades Strava</span><b>${typeof dataQualityReport==='function'?dataQualityReport().stravaCount:'—'}</b></div></div>
+ <div class="card"><div class="eyebrow">Contexto histórico</div>
+  <div class="bar"><span>Días con carga registrada</span><b>${p.activeDays}</b></div>
+  <div class="bar"><span>Carga media por día activo</span><b>${p.historicalAverage.toFixed(0)}</b></div>
+  <div class="bar"><span>Días desde última actividad</span><b>${p.daysSinceActivity===null?'—':p.daysSinceActivity}</b></div>
+  <p class="muted">${p.daysSinceActivity>14?'Tu fatiga reciente es baja porque llevas más de dos semanas sin actividad registrada. El fitness conserva parte del historial, pero seguirá descendiendo si no retomas entrenamiento.':'El estado actual incorpora el historial disponible y la carga reciente.'}</p>
+ </div>
  <div class="card disclaimer-box"><b>Cómo se calcula</b><p class="muted">Carga DOCH20 es una estimación basada en duración, distancia, desnivel, tipo de sesión, RPE, frecuencia cardíaca y potencia cuando están disponibles. No equivale a TSS, TRIMP ni a una evaluación médica.</p></div>`;
 }
