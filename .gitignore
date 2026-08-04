@@ -1,3 +1,9 @@
 .env
 node_modules/
 *.log
+.env.*
+!.env.example
+*.zip
+.DS_Store
+dist/
+coverage/
