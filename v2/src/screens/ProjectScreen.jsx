@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { loadProjectData } from '../services/projectData'
+
+import AppHeader from '../components/AppHeader'
 import ProjectHero from '../components/ProjectHero'
 import ProjectScore from '../components/ProjectScore'
 import CoachModule from '../components/CoachModule'
-import MilestoneModule from '../components/MilestoneModule'
+import MilestonesGrid from '../components/MilestonesGrid'
 import JournalModule from '../components/JournalModule'
 
 export default function ProjectScreen() {
@@ -19,18 +21,19 @@ export default function ProjectScreen() {
 
   return (
     <main className="project-screen">
-      <header className="top-header">
-        <div className="brand">DOCH<span>20</span></div>
-        <div className="intro">
-          <span>Buenos días, {data.userName}.</span>
-          <h1>Así va tu proyecto.</h1>
-        </div>
-      </header>
+      <AppHeader userName={data.userName} />
 
-      <ProjectHero project={data.project} />
+      <ProjectHero
+        project={data.project}
+        onOpenPlan={() => console.log('Abrir plan completo')}
+      />
+
       <ProjectScore project={data.project} />
+
       <CoachModule coach={data.project.coach} />
-      <MilestoneModule milestone={data.project.nextMilestone} />
+
+      <MilestonesGrid milestone={data.project.nextMilestone} />
+
       <JournalModule activities={data.project.activities} />
     </main>
   )
