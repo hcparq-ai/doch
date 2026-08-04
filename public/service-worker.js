@@ -1,4 +1,4 @@
-const CACHE='doch20-beta-0-1';
+const CACHE='doch20-beta-0-2';
 const CORE=['/','/index.html','/styles.css','/manifest.webmanifest','/icon.svg','/js/core.js','/js/modules/diary.js','/js/modules/nutrition.js','/js/modules/brevets.js','/js/services/strava.js','/js/modules/dashboard.js?v=17.0.0','/js/modules/road.js','/js/modules/recovery.js','/js/modules/bikes.js','/js/modules/performance.js?v=17.0.0','/js/modules/legacy.js','/js/services/cloud.js'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)))});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
