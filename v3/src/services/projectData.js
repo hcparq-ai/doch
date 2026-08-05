@@ -1,1 +1,14 @@
-export const projectData={userName:'Héctor',project:{title:'Brevet 1000 km',eventDate:'2026-10-09',currentWeek:8,totalWeeks:16,phase:'Construcción',score:86,dimensions:[{label:'Consistencia',value:84,state:'Alta'},{label:'Volumen',value:66,state:'Adecuado'},{label:'Fondos',value:60,state:'En progreso'},{label:'Recuperación',value:79,state:'Óptima'}],coach:{observation:'Excelente semana. Tu recuperación ha sido muy buena. En este momento el cuello de botella son los fondos largos.',risk:'En los próximos 10 días debes aumentar el volumen para mantener el progreso. Evita acumular fatiga antes del fondo de 200 km.',action:'Programa una salida de 150–180 km esta semana. Mantén las zonas 2 en la mayoría de tus entrenamientos.'},nextMilestone:{target:200,date:'2026-08-12',longest:119},activities:[{date:'31 JUL',title:'Salida de recuperación',detail:'32 km · 1 h 28 min · Z2',mood:'good'},{date:'30 JUL',title:'Salida con viento',detail:'45 km · 1 h 55 min · Z2',mood:'neutral'},{date:'29 JUL',title:'Descanso',detail:'Movilidad · Estiramientos',mood:'none'},{date:'28 JUL',title:'Fondo largo',detail:'110 km · 4 h 12 min · Z2',mood:'bad',note:'Rodilla 2/10'}]}}
+export const projectData = {
+  userName: 'Héctor',
+  project: {
+    eventDate: '2026-10-09',
+    score: 86,
+    nextMilestone: { target: 200, longest: 119 },
+    activities: [
+      { date:'31 JUL', title:'Salida de recuperación', detail:'32 km · 1 h 28 min · Z2', mood:'good' },
+      { date:'30 JUL', title:'Salida con viento', detail:'45 km · 1 h 55 min · Z2', mood:'neutral' },
+      { date:'29 JUL', title:'Descanso', detail:'Movilidad · Estiramientos', mood:'none' },
+      { date:'28 JUL', title:'Fondo largo', detail:'110 km · 4 h 12 min · Z2', mood:'bad', note:'Rodilla 2/10' },
+    ],
+  },
+}
